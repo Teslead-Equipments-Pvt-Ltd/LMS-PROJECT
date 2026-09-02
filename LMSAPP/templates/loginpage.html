@@ -1,0 +1,96 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Note - Login</title>
+    <link rel="stylesheet" href="{% static 'css/loginpage.css' %}">
+</head>
+
+<body>
+
+    <div class="login-container">
+        <div class="login-card">
+
+            <div class="logo">
+                <h1>LOGNOTE</h1>
+                <p><b>WELCOME</b></p>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Enter username" required>
+                    <span class="field-error-text" id="username-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter password" required>
+                    <span class="field-error-text" id="password-error"></span>
+                </div>
+
+                <button type="submit" id="loginBtn">Login</button>
+            </form>
+
+        </div>
+    </div>
+
+    <!-- JavaScript fetch() POST Handler -->
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const username = usernameInput ? usernameInput.value.trim() : '';
+            const password = passwordInput ? passwordInput.value.trim() : '';
+            const loginBtn = document.getElementById('loginBtn');
+
+            const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            const csrf = csrfInput ? csrfInput.value : '';
+
+            if (!username || !password) {
+                alert('Please enter both username and password.');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Login...';
+
+            try {
+                const response = await fetch('{% url "login_api" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrf
+                    },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    window.location.href = data.redirect_url || '/base/';
+                } else {
+                    alert(data.message || 'Invalid Username/Employee ID or Password.');
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                alert('Network error. Please try again.');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Login';
+            }
+        });
+    </script>
+
+</body>
+
+</html>

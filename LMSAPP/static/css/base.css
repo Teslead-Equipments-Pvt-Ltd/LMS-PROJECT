@@ -1,0 +1,117 @@
+* {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            background-color: #f4f6f9;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 250px;
+            background-color: #090930;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand {
+            padding: 20px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            background-color: #0f172a;
+            border-bottom: 1px solid #334155;
+            letter-spacing: 1px;
+        }
+
+        .sidebar-user {
+            padding: 15px 20px;
+            background-color: #334155;
+            font-size: 14px;
+            border-bottom: 1px solid #475569;
+        }
+
+        .sidebar-user p {
+            margin-bottom: 4px;
+            color: #94a3b8;
+        }
+
+        .sidebar-user strong {
+            color: #38bdf8;
+            font-size: 15px;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 15px 0;
+        }
+
+        .sidebar-menu li a {
+            display: block;
+            padding: 12px 20px;
+            color: #cbd5e1;
+            text-decoration: none;
+            font-size: 15px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+
+        .sidebar-menu li a:hover {
+            background-color: #334155;
+            color: #ffffff;
+            padding-left: 25px;
+        }
+
+        /* Main Content Container */
+        .main-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Bar */
+        .topbar {
+            background-color: #ffffff;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .topbar .user-info {
+            font-size: 14px;
+            color: #475569;
+        }
+
+        .topbar .logout-link {
+            color: #ef4444;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .topbar .logout-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Content Area */
+        .content-area {
+            padding: 25px;
+            flex-grow: 1;
+        }
+
+        .card {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }

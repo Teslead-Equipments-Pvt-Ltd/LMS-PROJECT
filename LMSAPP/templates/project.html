@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}LOGNOTE{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/project.css' %}">
+
+<div class="card">
+    <div class="project-header">
+        <h2>Project</h2>
+        <div class="header-actions">
+            <button class="btn-bulk-delete" id="bulkDeleteBtn" onclick="openBulkDeleteModal()">
+                Bulk Delete <span id="selectedCount">(0)</span>
+            </button>
+            <button class="btn-add-project" onclick="openAddModal()">
+                + Add New Project
+            </button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="project-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px; text-align: center;">
+                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+                    </th>
+                    <th>S.No</th>
+                    <th>Project Name</th>
+                    <th>Project Type</th>
+                    <th>Status</th>
+                    <th>Created Date</th>
+                    <th>Completion Date</th>
+                    <th>Due Date</th>
+                    <th style="text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="projectTableBody">
+                {% for project in projects %}
+                <tr data-id="{{ project.id }}" data-type="{{ project.project_type }}" data-due-date="{{ project.due_date }}" id="row-{{ project.id }}">
+                    <td style="text-align: center;">
+                        <input type="checkbox" class="row-checkbox" value="{{ project.id }}" onclick="updateBulkState()">
+                    </td>
+                    <td>{{ project.s_no }}</td>
+                    <td><strong>{{ project.project_name }}</strong></td>
+                    <td>
+                        {% if project.project_type == "Data Logger" %}
+                        <span class="badge badge-data-logger">Data Logger</span>
+                        {% else %}
+                        <span class="badge badge-internal">Internal Project</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <!-- Status Dropdown inside the project table -->
+                        <select class="status-select" onchange="handleInlineStatusChange(this, {{ project.id }})">
+                            <option value="Not Worked" {% if project.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
+                            <option value="In Progress" {% if project.status == "In Progress" %}selected{% endif %}>In Progress</option>
+                            <option value="Pending" {% if project.status == "Pending" %}selected{% endif %}>Pending</option>
+                            <option value="Completed" {% if project.status == "Completed" %}selected{% endif %}>Completed</option>
+                        </select>
+                    </td>
+                    <td id="created-date-{{ project.id }}" data-value="{{ project.created_date }}">{{ project.created_date|default:"-" }}</td>
+                    <td id="completion-date-{{ project.id }}" data-value="{{ project.completion_date }}">{{ project.completion_date|default:"-" }}</td>
+                    <td>{{ project.due_date|default:"-" }}</td>
+                    <td style="text-align: center;">
+                        <div class="action-btn-container">
+                            <button class="btn-action btn-action-edit" title="Edit Project" 
+                                onclick="openEditModal({{ project.id }}, '{{ project.project_name|escapejs }}', '{{ project.project_type|escapejs }}', '{{ project.status|escapejs }}', '{{ project.created_date }}', '{{ project.completion_date }}', '{{ project.due_date }}')">
+                                Edit
+                            </button>
+                            <button class="btn-action btn-action-delete" title="Delete Project" 
+                                onclick="openSingleDeleteModal({{ project.id }}, '{{ project.project_name|escapejs }}')">
+                                Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" style="text-align: center; color: #64748b; padding: 25px;">No projects found. Click "Add New Project" to create one.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Add New Project -->
+<div class="modal-overlay" id="addProjectModal">
+    <div class="modal-content">
+        <h3>Add New Project</h3>
+        <form id="addProjectForm" onsubmit="submitAddProject(event)">
+            {% csrf_token %}
+            <div class="form-group-modal">
+                <label for="new_project_name">Project Name</label>
+                <input type="text" id="new_project_name" required placeholder="Enter project name">
+            </div>
+            <div class="form-group-modal">
+                <label for="new_project_type">Project Type</label>
+                <select id="new_project_type" required>
+                    <option value="Data Logger">Data Logger</option>
+                    <option value="Internal Project">Internal Project</option>
+                </select>
+            </div>
+            <div class="form-group-modal">
+                <label for="new_status">Status</label>
+                <select id="new_status" required>
+                    <option value="Not Worked">Not Worked</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                </select>
+            </div>
+            <div class="form-group-modal">
+                <label for="new_due_date">Due Date</label>
+                <input type="date" id="new_due_date" required>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-modal-cancel" onclick="closeAddModal()">Cancel</button>
+                <button type="submit" class="btn-modal-confirm">Save Project</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Project -->
+<div class="modal-overlay" id="editProjectModal">
+    <div class="modal-content">
+        <h3>Edit Project Details</h3>
+        <form id="editProjectForm" onsubmit="submitEditProject(event)">
+            {% csrf_token %}
+            <input type="hidden" id="edit_project_id">
+            <div class="form-group-modal">
+                <label for="edit_project_name">Project Name</label>
+                <input type="text" id="edit_project_name" required placeholder="Enter project name">
+            </div>
+            <div class="form-group-modal">
+                <label for="edit_project_type">Project Type</label>
+                <select id="edit_project_type" required>
+                    <option value="Data Logger">Data Logger</option>
+                    <option value="Internal Project">Internal Project</option>
+                </select>
+            </div>
+            <div class="form-group-modal">
+                <label for="edit_status">Status</label>
+                <select id="edit_status" required onchange="handleEditModalStatusChange()">
+                    <option value="Not Worked">Not Worked</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                </select>
+            </div>
+            <div class="form-group-modal">
+                <label for="edit_created_date">Created Date</label>
+                <input type="date" id="edit_created_date">
+            </div>
+            <div class="form-group-modal">
+                <label for="edit_completion_date">Completion Date</label>
+                <input type="date" id="edit_completion_date">
+            </div>
+            <div class="form-group-modal">
+                <label for="edit_due_date">Due Date</label>
+                <input type="date" id="edit_due_date" required>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-modal-cancel" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn-modal-confirm">Update Project</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Single Delete Confirmation -->
+<div class="modal-overlay" id="singleDeleteModal">
+    <div class="modal-content">
+        <h3 style="color: #ef4444;">Confirm Delete Project</h3>
+        <p>Are you sure you want to delete project "<strong id="deleteProjectName"></strong>"?</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-modal-cancel" onclick="closeSingleDeleteModal()">Cancel</button>
+            <button type="button" class="btn-modal-delete" id="confirmSingleDeleteBtn">Delete Project</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Bulk Delete Confirmation -->
+<div class="modal-overlay" id="bulkDeleteModal">
+    <div class="modal-content">
+        <h3 style="color: #ef4444;">Confirm Bulk Delete</h3>
+        <p>Are you sure you want to delete <strong id="bulkDeleteCountText">0</strong> selected project(s)?</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-modal-cancel" onclick="closeBulkDeleteModal()">Cancel</button>
+            <button type="button" class="btn-modal-delete" onclick="submitBulkDelete()">Bulk Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Success Confirmation -->
+<div class="modal-overlay" id="editSuccessModal">
+    <div class="modal-content">
+        <h3 style="color: #16a34a;">Project Saved</h3>
+        <p id="editSuccessText"> Updated successfully.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-modal-confirm" onclick="closeEditSuccessModal()">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let activeDeleteId = null;
+
+    function getTodayDateString() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function toggleSelectAll(selectAllCheckbox) {
+        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = selectAllCheckbox.checked);
+        updateBulkState();
+    }
+
+    function updateBulkState() {
+        const selected = document.querySelectorAll('.row-checkbox:checked');
+        const bulkBtn = document.getElementById('bulkDeleteBtn');
+        document.getElementById('selectedCount').textContent = `(${selected.length})`;
+        bulkBtn.style.display = selected.length > 0 ? 'inline-block' : 'none';
+
+        const total = document.querySelectorAll('.row-checkbox');
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll && total.length > 0) {
+            selectAll.checked = (selected.length === total.length);
+        }
+    }
+
+    // Inline Status Change handler for table dropdown
+    async function handleInlineStatusChange(selectElem, projectId) {
+        const row = document.getElementById(`row-${projectId}`);
+        if (!row) return;
+
+        const newStatus = selectElem.value;
+        const createdCell = document.getElementById(`created-date-${projectId}`);
+        const completionCell = document.getElementById(`completion-date-${projectId}`);
+        
+        let createdDate = createdCell.dataset.value || (createdCell.textContent.trim() !== '-' ? createdCell.textContent.trim() : '');
+        let completionDate = completionCell.dataset.value || (completionCell.textContent.trim() !== '-' ? completionCell.textContent.trim() : '');
+        const today = getTodayDateString();
+
+        if (newStatus === 'In Progress') {
+            if (!createdDate) {
+                createdDate = today;
+                createdCell.textContent = today;
+                createdCell.dataset.value = today;
+            }
+        } else if (newStatus === 'Completed') {
+            completionDate = today;
+            completionCell.textContent = today;
+            completionCell.dataset.value = today;
+            if (!createdDate) {
+                createdDate = today;
+                createdCell.textContent = today;
+                createdCell.dataset.value = today;
+            }
+        }
+
+        const projectName = row.querySelector('strong').textContent.trim();
+        const projectType = row.dataset.type || 'Data Logger';
+        const dueDate = row.dataset.dueDate || '';
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            await fetch('/api/projects/update/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({
+                    id: projectId,
+                    project_name: projectName,
+                    project_type: projectType,
+                    status: newStatus,
+                    created_date: createdDate,
+                    completion_date: completionDate,
+                    due_date: dueDate
+                })
+            });
+        } catch (err) {
+            console.error('Status update error:', err);
+        }
+    }
+
+    function openEditModal(id, name, type, status, createdDate, completionDate, dueDate) {
+        document.getElementById('edit_project_id').value = id;
+        document.getElementById('edit_project_name').value = name || '';
+        document.getElementById('edit_project_type').value = type || 'Data Logger';
+        document.getElementById('edit_status').value = status || 'Not Worked';
+        document.getElementById('edit_created_date').value = createdDate || '';
+        document.getElementById('edit_completion_date').value = completionDate || '';
+        document.getElementById('edit_due_date').value = dueDate || '';
+        document.getElementById('editProjectModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editProjectModal').style.display = 'none';
+    }
+
+    function handleEditModalStatusChange() {
+        const status = document.getElementById('edit_status').value;
+        const createdInput = document.getElementById('edit_created_date');
+        const completionInput = document.getElementById('edit_completion_date');
+        const today = getTodayDateString();
+
+        if (status === 'In Progress' && !createdInput.value) {
+            createdInput.value = today;
+        } else if (status === 'Completed') {
+            completionInput.value = today;
+            if (!createdInput.value) createdInput.value = today;
+        }
+    }
+
+    async function submitEditProject(event) {
+        event.preventDefault();
+        const payload = {
+            id: document.getElementById('edit_project_id').value,
+            project_name: document.getElementById('edit_project_name').value.trim(),
+            project_type: document.getElementById('edit_project_type').value,
+            status: document.getElementById('edit_status').value,
+            created_date: document.getElementById('edit_created_date').value,
+            completion_date: document.getElementById('edit_completion_date').value,
+            due_date: document.getElementById('edit_due_date').value
+        };
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            const response = await fetch('/api/projects/update/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                closeEditModal();
+                openEditSuccessModal(`Project "${payload.project_name}" updated successfully!`);
+            } else {
+                alert(data.message || 'Failed to update project.');
+            }
+        } catch (err) {
+            alert('Network error while updating project.');
+        }
+    }
+
+    function openSingleDeleteModal(id, name) {
+        activeDeleteId = id;
+        document.getElementById('deleteProjectName').textContent = name;
+        document.getElementById('singleDeleteModal').style.display = 'flex';
+        document.getElementById('confirmSingleDeleteBtn').onclick = submitSingleDelete;
+    }
+
+    function closeSingleDeleteModal() {
+        activeDeleteId = null;
+        document.getElementById('singleDeleteModal').style.display = 'none';
+    }
+
+    async function submitSingleDelete() {
+        if (!activeDeleteId) return;
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            const response = await fetch('/api/projects/delete/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ id: activeDeleteId })
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                closeSingleDeleteModal();
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to delete project.');
+            }
+        } catch (err) {
+            alert('Network error while deleting project.');
+        }
+    }
+
+    function openBulkDeleteModal() {
+        const count = document.querySelectorAll('.row-checkbox:checked').length;
+        if (count === 0) return;
+        document.getElementById('bulkDeleteCountText').textContent = count;
+        document.getElementById('bulkDeleteModal').style.display = 'flex';
+    }
+
+    function closeBulkDeleteModal() {
+        document.getElementById('bulkDeleteModal').style.display = 'none';
+    }
+
+    async function submitBulkDelete() {
+        const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+        const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        if (ids.length === 0) return;
+
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            const response = await fetch('/api/projects/bulk-delete/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ ids: ids })
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                closeBulkDeleteModal();
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to bulk delete projects.');
+            }
+        } catch (err) {
+            alert('Network error while bulk deleting projects.');
+        }
+    }
+
+    function openAddModal() {
+        document.getElementById('addProjectModal').style.display = 'flex';
+    }
+
+    function closeAddModal() {
+        document.getElementById('addProjectModal').style.display = 'none';
+        document.getElementById('addProjectForm').reset();
+    }
+
+    async function submitAddProject(event) {
+        event.preventDefault();
+        const payload = {
+            project_name: document.getElementById('new_project_name').value.trim(),
+            project_type: document.getElementById('new_project_type').value,
+            status: document.getElementById('new_status').value,
+            due_date: document.getElementById('new_due_date').value
+        };
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            const response = await fetch('{% url "add_project_api" %}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                closeAddModal();
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to add project.');
+            }
+        } catch (err) {
+            alert('Network error while adding project.');
+        }
+    }
+
+    function openEditSuccessModal(msg) {
+        if (msg) document.getElementById('editSuccessText').textContent = msg;
+        document.getElementById('editSuccessModal').style.display = 'flex';
+    }
+
+    function closeEditSuccessModal() {
+        document.getElementById('editSuccessModal').style.display = 'none';
+        window.location.reload();
+    }
+</script>
+{% endblock %}

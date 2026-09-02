@@ -1,3 +1,3 @@
 from django.db import models
 
-# Create your models here.
+# Models not required - Raw SQL query approach used in services.
