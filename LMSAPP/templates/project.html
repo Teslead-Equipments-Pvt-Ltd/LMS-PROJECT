@@ -38,9 +38,11 @@
             </thead>
             <tbody id="projectTableBody">
                 {% for project in projects %}
-                <tr data-id="{{ project.id }}" data-type="{{ project.project_type }}" data-due-date="{{ project.due_date }}" id="row-{{ project.id }}">
+                <tr data-id="{{ project.id }}" data-type="{{ project.project_type }}"
+                    data-due-date="{{ project.due_date }}" id="row-{{ project.id }}">
                     <td style="text-align: center;">
-                        <input type="checkbox" class="row-checkbox" value="{{ project.id }}" onclick="updateBulkState()">
+                        <input type="checkbox" class="row-checkbox" value="{{ project.id }}"
+                            onclick="updateBulkState()">
                     </td>
                     <td>{{ project.s_no }}</td>
                     <td><strong>{{ project.project_name }}</strong></td>
@@ -65,11 +67,11 @@
                     <td>{{ project.due_date|default:"-" }}</td>
                     <td style="text-align: center;">
                         <div class="action-btn-container">
-                            <button class="btn-action btn-action-edit" title="Edit Project" 
+                            <button class="btn-action btn-action-edit" title="Edit Project"
                                 onclick="openEdit({{ project.id }}, '{{ project.project_name|escapejs }}', '{{ project.project_type|escapejs }}', '{{ project.status|escapejs }}', '{{ project.created_date }}', '{{ project.completion_date }}', '{{ project.due_date }}')">
                                 Edit
                             </button>
-                            <button class="btn-action btn-action-delete" title="Delete Project" 
+                            <button class="btn-action btn-action-delete" title="Delete Project"
                                 onclick="openSingleDeleteModal({{ project.id }}, '{{ project.project_name|escapejs }}')">
                                 Delete
                             </button>
@@ -78,7 +80,8 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9" style="text-align: center; color: #64748b; padding: 25px;">No projects found. Click "Add New Project" to create one.</td>
+                    <td colspan="9" style="text-align: center; color: #64748b; padding: 25px;">No projects found. Click
+                        "Add New Project" to create one.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -235,7 +238,7 @@
         }
     }
 
-   
+
     async function handleInlineStatusChange(selectElem, projectId) {
         const row = document.getElementById(`row-${projectId}`);
         if (!row) return;
@@ -243,7 +246,7 @@
         const newStatus = selectElem.value;
         const createdCell = document.getElementById(`created-date-${projectId}`);
         const completionCell = document.getElementById(`completion-date-${projectId}`);
-        
+
         let createdDate = createdCell.dataset.value || (createdCell.textContent.trim() !== '-' ? createdCell.textContent.trim() : '');
         let completionDate = completionCell.dataset.value || (completionCell.textContent.trim() !== '-' ? completionCell.textContent.trim() : '');
         const today = getTodayDateString();
@@ -320,7 +323,7 @@
 
     async function submitEditProject(event) {
         event.preventDefault();
-        const edittask = {
+        const editProjectData = {
             id: document.getElementById('edit_project_id').value,
             project_name: document.getElementById('edit_project_name').value.trim(),
             project_type: document.getElementById('edit_project_type').value,
@@ -335,12 +338,12 @@
             const response = await fetch('/api/projects/update/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                body: JSON.stringify(edittask)
+                body: JSON.stringify(editProjectData)
             });
             const data = await response.json();
             if (response.ok && data.status === 'success') {
                 closeEditModal();
-                openEditSuccessModal(`Project "${editask.project_name}" updated successfully!`);
+                openEditSuccessModal(`Project "${editProjectData.project_name}" updated successfully!`);
             } else {
                 alert(data.message || 'Failed to update project.');
             }
