@@ -66,7 +66,7 @@
                     <td style="text-align: center;">
                         <div class="action-btn-container">
                             <button class="btn-action btn-action-edit" title="Edit Project" 
-                                onclick="openEditModal({{ project.id }}, '{{ project.project_name|escapejs }}', '{{ project.project_type|escapejs }}', '{{ project.status|escapejs }}', '{{ project.created_date }}', '{{ project.completion_date }}', '{{ project.due_date }}')">
+                                onclick="openEdit({{ project.id }}, '{{ project.project_name|escapejs }}', '{{ project.project_type|escapejs }}', '{{ project.status|escapejs }}', '{{ project.created_date }}', '{{ project.completion_date }}', '{{ project.due_date }}')">
                                 Edit
                             </button>
                             <button class="btn-action btn-action-delete" title="Delete Project" 
@@ -289,7 +289,7 @@
         }
     }
 
-    function openEditModal(id, name, type, status, createdDate, completionDate, dueDate) {
+    function openEdit(id, name, type, status, createdDate, completionDate, dueDate) {
         document.getElementById('edit_project_id').value = id;
         document.getElementById('edit_project_name').value = name || '';
         document.getElementById('edit_project_type').value = type || 'Data Logger';
@@ -320,7 +320,7 @@
 
     async function submitEditProject(event) {
         event.preventDefault();
-        const payload = {
+        const edittask = {
             id: document.getElementById('edit_project_id').value,
             project_name: document.getElementById('edit_project_name').value.trim(),
             project_type: document.getElementById('edit_project_type').value,
@@ -335,12 +335,12 @@
             const response = await fetch('/api/projects/update/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(edittask)
             });
             const data = await response.json();
             if (response.ok && data.status === 'success') {
                 closeEditModal();
-                openEditSuccessModal(`Project "${payload.project_name}" updated successfully!`);
+                openEditSuccessModal(`Project "${editask.project_name}" updated successfully!`);
             } else {
                 alert(data.message || 'Failed to update project.');
             }

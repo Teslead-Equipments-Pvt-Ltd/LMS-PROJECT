@@ -10,10 +10,10 @@
     <div class="task-header">
         <h2>Task</h2>
         <div class="header-actions">
-            <button class="btn-bulk-delete" id="bulkDeleteBtn" onclick="openBulkDeleteModal()">
+            <button class="btn-bulk-delete" id="bulkDeleteBtn" onclick="openBulkDelete()">
                 Bulk Delete <span id="selectedCount">(0)</span>
             </button>
-            <button class="btn-add-task" onclick="openAddModal()">
+            <button class="btn-add-task" onclick="openAdd()">
                 + Add New Task
             </button>
         </div>
@@ -24,7 +24,7 @@
             <thead>
                 <tr>
                     <th style="width: 40px; text-align: center;">
-                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+                        <input type="checkbox" id="selectAll" onclick="selectAll(this)">
                     </th>
                     <th>S.No</th>
                     <th>Task Name</th>
@@ -38,14 +38,14 @@
                 {% for task in tasks %}
                 <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}" data-due-date="{{ task.due_date }}" id="row-{{ task.id }}">
                     <td style="text-align: center;">
-                        <input type="checkbox" class="row-checkbox" value="{{ task.id }}" onclick="updateBulkState()">
+                        <input type="checkbox" class="row-checkbox" value="{{ task.id }}" onclick="updateBulk()">
                     </td>
                     <td>{{ task.s_no }}</td>
                     <td><strong>{{ task.task_name }}</strong></td>
                     <td><span class="badge badge-data-logger">{{ task.project_name }}</span></td>
                     <td>{{ task.due_date|default:"-" }}</td>
                     <td>
-                        <select class="status-select" onchange="handleInlineTaskStatusChange(this, {{ task.id }})">
+                        <select class="status-select" onchange="changeStatus(this, {{ task.id }})">
                             <option value="Not Worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
                             <option value="In Progress" {% if task.status == "In Progress" %}selected{% endif %}>In Progress</option>
                             <option value="Pending" {% if task.status == "Pending" %}selected{% endif %}>Pending</option>
@@ -55,11 +55,11 @@
                     <td style="text-align: center;">
                         <div class="action-btn-container">
                             <button class="btn-action btn-action-edit" title="Edit Task" 
-                                onclick="openEditModal({{ task.id }}, '{{ task.task_name|escapejs }}', '{{ task.project_name|escapejs }}', '{{ task.due_date }}', '{{ task.status|escapejs }}')">
+                                onclick="openEdit({{ task.id }}, '{{ task.task_name|escapejs }}', '{{ task.project_name|escapejs }}', '{{ task.due_date }}', '{{ task.status|escapejs }}')">
                                 Edit
                             </button>
                             <button class="btn-action btn-action-delete" title="Delete Task" 
-                                onclick="openSingleDeleteModal({{ task.id }}, '{{ task.task_name|escapejs }}')">
+                                onclick="openDelete({{ task.id }}, '{{ task.task_name|escapejs }}')">
                                 Delete
                             </button>
                         </div>
@@ -79,7 +79,7 @@
 <div class="modal-overlay" id="addTaskModal">
     <div class="modal-content">
         <h3>Add New Task</h3>
-        <form id="addTaskForm" onsubmit="submitAddTask(event)">
+        <form id="addTaskForm" onsubmit="saveTask(event)">
             {% csrf_token %}
             <div class="form-group-modal">
                 <label for="new_task_name">Task Name</label>
@@ -109,7 +109,7 @@
                 </select>
             </div>
             <div class="modal-actions">
-                <button type="button" class="btn-modal-cancel" onclick="closeAddModal()">Cancel</button>
+                <button type="button" class="btn-modal-cancel" onclick="closeAdd()">Cancel</button>
                 <button type="submit" class="btn-modal-confirm">Save Task</button>
             </div>
         </form>
@@ -120,7 +120,7 @@
 <div class="modal-overlay" id="editTaskModal">
     <div class="modal-content">
         <h3>Edit Task Details</h3>
-        <form id="editTaskForm" onsubmit="submitEditTask(event)">
+        <form id="editTaskForm" onsubmit="updateTask(event)">
             {% csrf_token %}
             <input type="hidden" id="edit_task_id">
             <div class="form-group-modal">
@@ -133,7 +133,6 @@
                     {% for proj in projects %}
                     <option value="{{ proj.project_name }}">{{ proj.project_name }}</option>
                     {% empty %}
-                    <option value="General Project">General Project</option>
                     {% endfor %}
                 </select>
             </div>
@@ -151,7 +150,7 @@
                 </select>
             </div>
             <div class="modal-actions">
-                <button type="button" class="btn-modal-cancel" onclick="closeEditModal()">Cancel</button>
+                <button type="button" class="btn-modal-cancel" onclick="closeEdit()">Cancel</button>
                 <button type="submit" class="btn-modal-confirm">Update Task</button>
             </div>
         </form>
@@ -164,7 +163,7 @@
         <h3 style="color: #ef4444;">Confirm Delete Task</h3>
         <p>Are you sure you want to delete task "<strong id="deleteTaskName"></strong>"?</p>
         <div class="modal-actions">
-            <button type="button" class="btn-modal-cancel" onclick="closeSingleDeleteModal()">Cancel</button>
+            <button type="button" class="btn-modal-cancel" onclick="closeDelete()">Cancel</button>
             <button type="button" class="btn-modal-delete" id="confirmSingleDeleteBtn">Delete Task</button>
         </div>
     </div>
@@ -176,8 +175,8 @@
         <h3 style="color: #ef4444;">Confirm Bulk Delete</h3>
         <p>Are you sure you want to delete <strong id="bulkDeleteCountText">0</strong> selected task(s)?</p>
         <div class="modal-actions">
-            <button type="button" class="btn-modal-cancel" onclick="closeBulkDeleteModal()">Cancel</button>
-            <button type="button" class="btn-modal-delete" onclick="submitBulkDelete()">Bulk Delete</button>
+            <button type="button" class="btn-modal-cancel" onclick="closeBulkDelete()">Cancel</button>
+            <button type="button" class="btn-modal-delete" onclick="deleteBulk()">Bulk Delete</button>
         </div>
     </div>
 </div>
@@ -188,7 +187,7 @@
         <h3 style="color: #16a34a;">Task Saved</h3>
         <p id="editSuccessText">Updated successfully.</p>
         <div class="modal-actions">
-            <button type="button" class="btn-modal-confirm" onclick="closeEditSuccessModal()">OK</button>
+            <button type="button" class="btn-modal-confirm" onclick="closeSuccess()">OK</button>
         </div>
     </div>
 </div>
@@ -196,25 +195,28 @@
 <script>
     let activeDeleteId = null;
 
-    function toggleSelectAll(selectAllCheckbox) {
-        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = selectAllCheckbox.checked);
-        updateBulkState();
+    // 1. Select All Checkboxes
+    function selectAll(headerCheckbox) {
+        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = headerCheckbox.checked);
+        updateBulk();
     }
 
-    function updateBulkState() {
+    // 2. Update Bulk Delete Count
+    function updateBulk() {
         const selected = document.querySelectorAll('.row-checkbox:checked');
         const bulkBtn = document.getElementById('bulkDeleteBtn');
         document.getElementById('selectedCount').textContent = `(${selected.length})`;
         bulkBtn.style.display = selected.length > 0 ? 'inline-block' : 'none';
 
         const total = document.querySelectorAll('.row-checkbox');
-        const selectAll = document.getElementById('selectAll');
-        if (selectAll && total.length > 0) {
-            selectAll.checked = (selected.length === total.length);
+        const selectAllHeader = document.getElementById('selectAll');
+        if (selectAllHeader && total.length > 0) {
+            selectAllHeader.checked = (selected.length === total.length);
         }
     }
 
-    async function handleInlineTaskStatusChange(selectElem, taskId) {
+    // 3. Change Status Dropdown Inline
+    async function changeStatus(selectElem, taskId) {
         const row = document.getElementById(`row-${taskId}`);
         if (!row) return;
 
@@ -241,7 +243,47 @@
         }
     }
 
-    function openEditModal(id, name, projectName, dueDate, status) {
+    // 4. Add Task Functions
+    function openAdd() {
+        document.getElementById('addTaskModal').style.display = 'flex';
+    }
+
+    function closeAdd() {
+        document.getElementById('addTaskModal').style.display = 'none';
+        document.getElementById('addTaskForm').reset();
+    }
+
+    async function saveTask(event) {
+        event.preventDefault();
+        const addtask = {
+            task_name: document.getElementById('new_task_name').value.trim(),
+            project_name: document.getElementById('new_project_name').value,
+            due_date: document.getElementById('new_due_date').value,
+            status: document.getElementById('new_status').value
+        }
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            const response = await fetch('/api/tasks/add/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify(addtask)
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                closeAdd();
+                alert("Task added successfully")
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to add task.');
+            }
+        } catch (err) {
+            alert('Network error while adding task.');
+        }
+    }
+
+    
+    function openEdit(id, name, projectName, dueDate, status) {
         document.getElementById('edit_task_id').value = id;
         document.getElementById('edit_task_name').value = name || '';
         document.getElementById('edit_project_name').value = projectName || '';
@@ -250,13 +292,13 @@
         document.getElementById('editTaskModal').style.display = 'flex';
     }
 
-    function closeEditModal() {
+    function closeEdit() {
         document.getElementById('editTaskModal').style.display = 'none';
     }
 
-    async function submitEditTask(event) {
+    async function updateTask(event) {
         event.preventDefault();
-        const payload = {
+        const tasks = {
             id: document.getElementById('edit_task_id').value,
             task_name: document.getElementById('edit_task_name').value.trim(),
             project_name: document.getElementById('edit_project_name').value,
@@ -269,12 +311,12 @@
             const response = await fetch('/api/tasks/update/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(tasks)
             });
             const data = await response.json();
             if (response.ok && data.status === 'success') {
-                closeEditModal();
-                openEditSuccessModal(`Task "${payload.task_name}" updated successfully!`);
+                closeEdit();
+                showSuccess(`Task "${tasks.task_name}" updated successfully!`);
             } else {
                 alert(data.message || 'Failed to update task.');
             }
@@ -283,19 +325,20 @@
         }
     }
 
-    function openSingleDeleteModal(id, name) {
+    // 6. Single Delete Task Functions
+    function openDelete(id, name) {
         activeDeleteId = id;
         document.getElementById('deleteTaskName').textContent = name;
         document.getElementById('singleDeleteModal').style.display = 'flex';
-        document.getElementById('confirmSingleDeleteBtn').onclick = submitSingleDelete;
+        document.getElementById('confirmSingleDeleteBtn').onclick = deleteTask;
     }
 
-    function closeSingleDeleteModal() {
+    function closeDelete() {
         activeDeleteId = null;
         document.getElementById('singleDeleteModal').style.display = 'none';
     }
 
-    async function submitSingleDelete() {
+    async function deleteTask() {
         if (!activeDeleteId) return;
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
@@ -307,7 +350,7 @@
             });
             const data = await response.json();
             if (response.ok && data.status === 'success') {
-                closeSingleDeleteModal();
+                closeDelete();
                 window.location.reload();
             } else {
                 alert(data.message || 'Failed to delete task.');
@@ -317,18 +360,19 @@
         }
     }
 
-    function openBulkDeleteModal() {
+    // 7. Bulk Delete Tasks Functions
+    function openBulkDelete() {
         const count = document.querySelectorAll('.row-checkbox:checked').length;
         if (count === 0) return;
         document.getElementById('bulkDeleteCountText').textContent = count;
         document.getElementById('bulkDeleteModal').style.display = 'flex';
     }
 
-    function closeBulkDeleteModal() {
+    function closeBulkDelete() {
         document.getElementById('bulkDeleteModal').style.display = 'none';
     }
 
-    async function submitBulkDelete() {
+    async function deleteBulk() {
         const checkboxes = document.querySelectorAll('.row-checkbox:checked');
         const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
         if (ids.length === 0) return;
@@ -343,7 +387,7 @@
             });
             const data = await response.json();
             if (response.ok && data.status === 'success') {
-                closeBulkDeleteModal();
+                closeBulkDelete();
                 window.location.reload();
             } else {
                 alert(data.message || 'Failed to bulk delete tasks.');
@@ -353,49 +397,13 @@
         }
     }
 
-    function openAddModal() {
-        document.getElementById('addTaskModal').style.display = 'flex';
-    }
-
-    function closeAddModal() {
-        document.getElementById('addTaskModal').style.display = 'none';
-        document.getElementById('addTaskForm').reset();
-    }
-
-    async function submitAddTask(event) {
-        event.preventDefault();
-        const payload = {
-            task_name: document.getElementById('new_task_name').value.trim(),
-            project_name: document.getElementById('new_project_name').value,
-            due_date: document.getElementById('new_due_date').value,
-            status: document.getElementById('new_status').value
-        };
-        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-
-        try {
-            const response = await fetch('/api/tasks/add/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                body: JSON.stringify(payload)
-            });
-            const data = await response.json();
-            if (response.ok && data.status === 'success') {
-                closeAddModal();
-                window.location.reload();
-            } else {
-                alert(data.message || 'Failed to add task.');
-            }
-        } catch (err) {
-            alert('Network error while adding task.');
-        }
-    }
-
-    function openEditSuccessModal(msg) {
+    // 8. Success Modal Functions
+    function showSuccess(msg) {
         if (msg) document.getElementById('editSuccessText').textContent = msg;
         document.getElementById('editSuccessModal').style.display = 'flex';
     }
 
-    function closeEditSuccessModal() {
+    function closeSuccess() {
         document.getElementById('editSuccessModal').style.display = 'none';
         window.location.reload();
     }
