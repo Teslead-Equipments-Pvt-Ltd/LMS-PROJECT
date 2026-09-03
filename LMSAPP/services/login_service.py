@@ -2,10 +2,7 @@ from django.db import connection
 from django.contrib.auth.hashers import make_password, check_password
 
 def ensure_employee_table():
-    """
-    Executes raw SQL to create the 'employee' table if missing, ensures role_id column exists,
-    and updates password and role_id for superadmin, admin, and employee users.
-    """
+   
     with connection.cursor() as cursor:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS employee (
@@ -18,7 +15,7 @@ def ensure_employee_table():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
 
-        # Add role_id column if table existed previously without it
+
         try:
             cursor.execute("ALTER TABLE employee ADD COLUMN role_id INT DEFAULT 3;")
         except Exception:
@@ -49,10 +46,7 @@ def ensure_employee_table():
         """, ['employee', employee_pwd, 'employee@gmail.com', 3, employee_pwd])
 
 def add_employee_to_db(username, password, email="", role_id=3):
-    """
-    Raw SQL helper function to manually store new Superadmin, Admin, or Employee details into 'employee' table.
-    role_id: 1 = Superadmin, 2 = Admin, 3 = Employee
-    """
+    
     ensure_employee_table()
     hashed_password = make_password(password)
     with connection.cursor() as cursor:
@@ -65,8 +59,7 @@ def add_employee_to_db(username, password, email="", role_id=3):
 
 def authenticate_user_service(username, password):
     """
-    Authenticates user credentials against the 'employee' database table using raw SQL.
-    Returns tuple: (user_dict, error_message)
+  
     """
     if not username or not password:
         return None, 'Username/Employee ID and password are required.'
@@ -99,7 +92,7 @@ def authenticate_user_service(username, password):
                 is_valid_pwd = True
 
         if is_valid_pwd:
-            # Map role_id to user_type and superuser status
+           
             if db_role_id == 1:
                 user_type = 'Superadmin'
                 superuser = True

@@ -7,17 +7,17 @@ def ensure_projects_table():
     """
     with connection.cursor() as cursor:
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS projects (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                project_name VARCHAR(200) NOT NULL,
-                project_type VARCHAR(100) NOT NULL,
-                status VARCHAR(50) NOT NULL DEFAULT 'Not Worked',
-                created_date VARCHAR(50) DEFAULT NULL,
-                completion_date VARCHAR(50) DEFAULT NULL,
-                due_date VARCHAR(50) DEFAULT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        """)
+        #     CREATE TABLE IF NOT EXISTS projects (
+        #         id INT AUTO_INCREMENT PRIMARY KEY,
+        #         project_name VARCHAR(200) NOT NULL,
+        #         project_type VARCHAR(100) NOT NULL,
+        #         status VARCHAR(50) NOT NULL DEFAULT 'Not Worked',
+        #         created_date VARCHAR(50) DEFAULT NULL,
+        #         completion_date VARCHAR(50) DEFAULT NULL,
+        #         due_date VARCHAR(50) DEFAULT NULL,
+        #         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        #     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        # """)
 
 def get_all_projects_service():
     """
@@ -46,10 +46,7 @@ def get_all_projects_service():
     return projects
 
 def add_project_service(project_name, project_type, status, due_date):
-    """
-    Adds a new project into the 'projects' table.
-    Automatically sets created_date if status is 'In Progress' or completion_date if status is 'Completed'.
-    """
+   
     ensure_projects_table()
     today_str = datetime.date.today().strftime("%Y-%m-%d")
     created_date = today_str if status == "In Progress" else ""
@@ -59,17 +56,15 @@ def add_project_service(project_name, project_type, status, due_date):
         cursor.execute("""
             INSERT INTO projects (project_name, project_type, status, created_date, completion_date, due_date)
             VALUES (%s, %s, %s, %s, %s, %s)
-        """, [project_name, project_type, status, created_date, completion_date, due_date or ''])
+        """, [project_name, project_type, status, created_date, completion_date, due_date])
     return True
 
 def update_project_service(project_id, project_name, project_type, status, created_date, completion_date, due_date):
-    """
-    Updates an existing project record in the 'projects' table.
-    """
+    
     ensure_projects_table()
     today_str = datetime.date.today().strftime("%Y-%m-%d")
     
-    # Auto logic if status changes
+   
     if status == "In Progress" and not created_date:
         created_date = today_str
     if status == "Completed" and not completion_date:
@@ -93,9 +88,7 @@ def delete_project_service(project_id):
     return True
 
 def bulk_delete_projects_service(project_ids):
-    """
-    Deletes multiple project records from the 'projects' table permanently by IDs list.
-    """
+   
     if not project_ids:
         return True
     ensure_projects_table()

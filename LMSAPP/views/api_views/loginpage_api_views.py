@@ -4,7 +4,6 @@ from LMSAPP.services.login_service import authenticate_user_service
 
 def login_api(request):
     """
-    API endpoint for employee login.
     """
     if request.method != 'POST':
         return JsonResponse({'message': 'Method not allowed'}, status=405)
@@ -20,7 +19,7 @@ def login_api(request):
         user, error_message = authenticate_user_service(username, password)
         
         if user:
-            # Save user session details
+           
             request.session['user_id'] = user['user_id']
             request.session['user_name'] = user['user_name']
             request.session['user_type'] = user['user_type']
@@ -31,7 +30,7 @@ def login_api(request):
                 'redirect_url': '/base/',
                 'user_name': user['user_name'],
                 'user_type': user['user_type'],
-                'superuser': user['superuser']
+             
             })
         else:
             return JsonResponse({'message': error_message or 'Invalid Username/Employee ID or Password.'}, status=401)

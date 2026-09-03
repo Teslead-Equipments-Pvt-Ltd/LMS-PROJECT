@@ -1,0 +1,228 @@
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+.task-header h2 {
+    font-size: 22px;
+    color: #141517;
+    font-weight: 700;
+}
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.btn-add-task {
+    background-color: #280ad3;
+    color: #ffffff;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-add-task:hover {
+    background-color: #1e293b;
+}
+.btn-bulk-delete {
+    background-color: #ef4444;
+    color: #ffffff;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: none; /* Displayed only when checkboxes are selected */
+    transition: background 0.2s;
+}
+.btn-bulk-delete:hover {
+    background-color: #dc2626;
+}
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.task-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 14px;
+}
+.task-table th {
+    background-color: #364056;
+    color: #ffffff;
+    padding: 12px 14px;
+    font-weight: 600;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+.task-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    vertical-align: middle;
+}
+.task-table tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Badges & Select Inputs */
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.status-not-worked { background-color: #f1f5f9; color: #475569; }
+.status-in-progress { background-color: #fef9c3; color: #854d0e; }
+.status-pending { background-color: #ffedd5; color: #c2410c; }
+.status-completed { background-color: #dcfce7; color: #15803d; }
+
+.status-select {
+    padding: 6px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    background-color: #ffffff;
+    color: #334155;
+    cursor: pointer;
+}
+.status-select:focus {
+    outline: none;
+    border-color: #280ad3;
+}
+
+/* Text Action Buttons */
+.action-btn-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+.btn-action {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-action-edit {
+    background-color: #e0f2fe;
+    color: #14772b;
+}
+.btn-action-edit:hover {
+    background-color: #bae6fd;
+}
+.btn-action-delete {
+    background-color: #fee2e2;
+    color: #ef4444;
+}
+.btn-action-delete:hover {
+    background-color: #fca5a5;
+}
+
+.row-checkbox, #selectAll {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #080d2f;
+}
+
+/* Modals */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.55);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-content {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 8px;
+    width: 460px;
+    max-width: 92%;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+}
+.modal-content h3 {
+    margin-bottom: 16px;
+    font-size: 18px;
+    color: #0f172a;
+    font-weight: 700;
+}
+.modal-content p {
+    font-size: 14px;
+    color: #475569;
+    margin-bottom: 20px;
+}
+.form-group-modal {
+    margin-bottom: 14px;
+}
+.form-group-modal label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 6px;
+}
+.form-group-modal input, .form-group-modal select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+}
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+.btn-modal-cancel {
+    background-color: #94a3b8;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-modal-delete {
+    background-color: #ef4444;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-modal-confirm {
+    background-color: #280ad3;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}

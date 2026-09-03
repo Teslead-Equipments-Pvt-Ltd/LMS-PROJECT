@@ -235,7 +235,7 @@
         }
     }
 
-    // Inline Status Change handler for table dropdown
+   
     async function handleInlineStatusChange(selectElem, projectId) {
         const row = document.getElementById(`row-${projectId}`);
         if (!row) return;
@@ -439,7 +439,7 @@
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
         try {
-            const response = await fetch('{% url "add_project_api" %}', {
+            const response = await fetch('/api/projects/add/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
                 body: JSON.stringify(payload)

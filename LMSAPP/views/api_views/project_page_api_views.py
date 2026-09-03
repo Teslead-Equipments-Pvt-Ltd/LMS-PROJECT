@@ -9,9 +9,7 @@ from LMSAPP.services.project_service import (
 )
 
 def get_projects_api(request):
-    """
-   
-    """
+    
     try:
         projects = get_all_projects_service()
         return JsonResponse({'status': 'success', 'data': projects})
@@ -19,8 +17,7 @@ def get_projects_api(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def add_project_api(request):
-    """
-    """
+   
     if request.method != 'POST':
         return JsonResponse({'message': 'Method not allowed'}, status=405)
     try:
@@ -39,9 +36,7 @@ def add_project_api(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def update_project_api(request):
-    """
-    API to update an existing project's status, dates, and details.
-    """
+   
     if request.method != 'POST':
         return JsonResponse({'message': 'Method not allowed'}, status=405)
     try:
@@ -63,9 +58,7 @@ def update_project_api(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def delete_project_api(request):
-    """
-    API to delete a project by ID.
-    """
+    
     if request.method != 'POST':
         return JsonResponse({'message': 'Method not allowed'}, status=405)
     try:
@@ -79,9 +72,7 @@ def delete_project_api(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def bulk_delete_projects_api(request):
-    """
-    API to bulk delete projects by array of IDs.
-    """
+    
     if request.method != 'POST':
         return JsonResponse({'message': 'Method not allowed'}, status=405)
     try:

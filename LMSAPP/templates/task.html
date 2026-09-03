@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}LOGNOTE{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/task.css' %}">
+
+<div class="card">
+    <div class="task-header">
+        <h2>Task</h2>
+        <div class="header-actions">
+            <button class="btn-bulk-delete" id="bulkDeleteBtn" onclick="openBulkDeleteModal()">
+                Bulk Delete <span id="selectedCount">(0)</span>
+            </button>
+            <button class="btn-add-task" onclick="openAddModal()">
+                + Add New Task
+            </button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table class="task-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px; text-align: center;">
+                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+                    </th>
+                    <th>S.No</th>
+                    <th>Task Name</th>
+                    <th>Project Name</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th style="text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="taskTableBody">
+                {% for task in tasks %}
+                <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}" data-due-date="{{ task.due_date }}" id="row-{{ task.id }}">
+                    <td style="text-align: center;">
+                        <input type="checkbox" class="row-checkbox" value="{{ task.id }}" onclick="updateBulkState()">
+                    </td>
+                    <td>{{ task.s_no }}</td>
+                    <td><strong>{{ task.task_name }}</strong></td>
+                    <td><span class="badge badge-data-logger">{{ task.project_name }}</span></td>
+                    <td>{{ task.due_date|default:"-" }}</td>
+                    <td>
+                        <select class="status-select" onchange="handleInlineTaskStatusChange(this, {{ task.id }})">
+                            <option value="Not Worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
+                            <option value="In Progress" {% if task.status == "In Progress" %}selected{% endif %}>In Progress</option>
+                            <option value="Pending" {% if task.status == "Pending" %}selected{% endif %}>Pending</option>
+                            <option value="Completed" {% if task.status == "Completed" %}selected{% endif %}>Completed</option>
+                        </select>
+                    </td>
+                    <td style="text-align: center;">
+                        <div class="action-btn-container">
+                            <button class="btn-action btn-action-edit" title="Edit Task" 
+                                onclick="openEditModal({{ task.id }}, '{{ task.task_name|escapejs }}', '{{ task.project_name|escapejs }}', '{{ task.due_date }}', '{{ task.status|escapejs }}')">
+                                Edit
+                            </button>
+                            <button class="btn-action btn-action-delete" title="Delete Task" 
+                                onclick="openSingleDeleteModal({{ task.id }}, '{{ task.task_name|escapejs }}')">
+                                Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: #64748b; padding: 25px;">No tasks found. Click "Add New Task" to create one.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal: Add New Task -->
+<div class="modal-overlay" id="addTaskModal">
+    <div class="modal-content">
+        <h3>Add New Task</h3>
+        <form id="addTaskForm" onsubmit="submitAddTask(event)">
+            {% csrf_token %}
+            <div class="form-group-modal">
+                <label for="new_task_name">Task Name</label>
+                <input type="text" id="new_task_name" required placeholder="Enter task name">
+            </div>
+            <div class="form-group-modal">
+                <label for="new_project_name">Project Name</label>
+                <select id="new_project_name" required>
+                    <option value="" disabled selected>-- Select Project --</option>
+                    {% for proj in projects %}
+                    <option value="{{ proj.project_name }}">{{ proj.project_name }}</option>
+                    {% empty %}
+                    <option value="General Project">General Project</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group-modal">
+                <label for="new_due_date">Due Date</label>
+                <input type="date" id="new_due_date" required>
+            </div>
+            <div class="form-group-modal">
+                <label for="new_status">Status</label>
+                <select id="new_status" required>
+                    <option value="Not Worked">Not Worked</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-modal-cancel" onclick="closeAddModal()">Cancel</button>
+                <button type="submit" class="btn-modal-confirm">Save Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Task -->
+<div class="modal-overlay" id="editTaskModal">
+    <div class="modal-content">
+        <h3>Edit Task Details</h3>
+        <form id="editTaskForm" onsubmit="submitEditTask(event)">
+            {% csrf_token %}
+            <input type="hidden" id="edit_task_id">
+            <div class="form-group-modal">
+                <label for="edit_task_name">Task Name</label>
+                <input type="text" id="edit_task_name" required placeholder="Enter task name">
+            </div>
+            <div class="form-group-modal">
+                <label for="edit_project_name">Project Name</label>
+                <select id="edit_project_name" required>
+                    {% for proj in projects %}
+                    <option value="{{ proj.project_name }}">{{ proj.project_name }}</option>
+                    {% empty %}
+                    <option value="General Project">General Project</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group-modal">
+                <label for="edit_due_date">Due Date</label>
+                <input type="date" id="edit_due_date" required>
+            </div>
+            <div class="form-group-modal">
+                <label for="edit_status">Status</label>
+                <select id="edit_status" required>
+                    <option value="Not Worked">Not Worked</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Completed">Completed</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-modal-cancel" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn-modal-confirm">Update Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Single Delete Confirmation -->
+<div class="modal-overlay" id="singleDeleteModal">
+    <div class="modal-content">
+        <h3 style="color: #ef4444;">Confirm Delete Task</h3>
+        <p>Are you sure you want to delete task "<strong id="deleteTaskName"></strong>"?</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-modal-cancel" onclick="closeSingleDeleteModal()">Cancel</button>
+            <button type="button" class="btn-modal-delete" id="confirmSingleDeleteBtn">Delete Task</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Bulk Delete Confirmation -->
+<div class="modal-overlay" id="bulkDeleteModal">
+    <div class="modal-content">
+        <h3 style="color: #ef4444;">Confirm Bulk Delete</h3>
+        <p>Are you sure you want to delete <strong id="bulkDeleteCountText">0</strong> selected task(s)?</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-modal-cancel" onclick="closeBulkDeleteModal()">Cancel</button>
+            <button type="button" class="btn-modal-delete" onclick="submitBulkDelete()">Bulk Delete</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Success Confirmation -->
+<div class="modal-overlay" id="editSuccessModal">
+    <div class="modal-content">
+        <h3 style="color: #16a34a;">Task Saved</h3>
+        <p id="editSuccessText">Updated successfully.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-modal-confirm" onclick="closeEditSuccessModal()">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let activeDeleteId = null;
+
+    function toggleSelectAll(selectAllCheckbox) {
+        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = selectAllCheckbox.checked);
+        updateBulkState();
+    }
+
+    function updateBulkState() {
+        const selected = document.querySelectorAll('.row-checkbox:checked');
+        const bulkBtn = document.getElementById('bulkDeleteBtn');
+        document.getElementById('selectedCount').textContent = `(${selected.length})`;
+        bulkBtn.style.display = selected.length > 0 ? 'inline-block' : 'none';
+
+        const total = document.querySelectorAll('.row-checkbox');
+        const selectAll = document.getElementById('selectAll');
+        if (selectAll && total.length > 0) {
+            selectAll.checked = (selected.length === total.length);
+        }
+    }
+
+    async function handleInlineTaskStatusChange(selectElem, taskId) {
+        const row = document.getElementById(`row-${taskId}`);
+        if (!row) return;
+
+        const newStatus = selectElem.value;
+        const taskName = row.querySelector('strong').textContent.trim();
+        const projectName = row.dataset.project || '';
+        const dueDate = row.dataset.dueDate || '';
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            await fetch('/api/tasks/update/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({
+                    id: taskId,
+                    task_name: taskName,
+                    project_name: projectName,
+                    due_date: dueDate,
+                    status: newStatus
+                })
+            });
+        } catch (err) {
+            console.error('Task status update error:', err);
+        }
+    }
+
+    function openEditModal(id, name, projectName, dueDate, status) {
+        document.getElementById('edit_task_id').value = id;
+        document.getElementById('edit_task_name').value = name || '';
+        document.getElementById('edit_project_name').value = projectName || '';
+        document.getElementById('edit_due_date').value = dueDate || '';
+        document.getElementById('edit_status').value = status || 'Not Worked';
+        document.getElementById('editTaskModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editTaskModal').style.display = 'none';
+    }
+
+    async function submitEditTask(event) {
+        event.preventDefault();
+        const payload = {
+            id: document.getElementById('edit_task_id').value,
+            task_name: document.getElementById('edit_task_name').value.trim(),
+            project_name: document.getElementById('edit_project_name').value,
+            due_date: document.getElementById('edit_due_date').value,
+            status: document.getElementById('edit_status').value
+        };
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            const response = await fetch('/api/tasks/update/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                closeEditModal();
+                openEditSuccessModal(`Task "${payload.task_name}" updated successfully!`);
+            } else {
+                alert(data.message || 'Failed to update task.');
+            }
+        } catch (err) {
+            alert('Network error while updating task.');
+        }
+    }
+
+    function openSingleDeleteModal(id, name) {
+        activeDeleteId = id;
+        document.getElementById('deleteTaskName').textContent = name;
+        document.getElementById('singleDeleteModal').style.display = 'flex';
+        document.getElementById('confirmSingleDeleteBtn').onclick = submitSingleDelete;
+    }
+
+    function closeSingleDeleteModal() {
+        activeDeleteId = null;
+        document.getElementById('singleDeleteModal').style.display = 'none';
+    }
+
+    async function submitSingleDelete() {
+        if (!activeDeleteId) return;
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            const response = await fetch('/api/tasks/delete/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ id: activeDeleteId })
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                closeSingleDeleteModal();
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to delete task.');
+            }
+        } catch (err) {
+            alert('Network error while deleting task.');
+        }
+    }
+
+    function openBulkDeleteModal() {
+        const count = document.querySelectorAll('.row-checkbox:checked').length;
+        if (count === 0) return;
+        document.getElementById('bulkDeleteCountText').textContent = count;
+        document.getElementById('bulkDeleteModal').style.display = 'flex';
+    }
+
+    function closeBulkDeleteModal() {
+        document.getElementById('bulkDeleteModal').style.display = 'none';
+    }
+
+    async function submitBulkDelete() {
+        const checkboxes = document.querySelectorAll('.row-checkbox:checked');
+        const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
+        if (ids.length === 0) return;
+
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            const response = await fetch('/api/tasks/bulk-delete/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({ ids: ids })
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                closeBulkDeleteModal();
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to bulk delete tasks.');
+            }
+        } catch (err) {
+            alert('Network error while bulk deleting tasks.');
+        }
+    }
+
+    function openAddModal() {
+        document.getElementById('addTaskModal').style.display = 'flex';
+    }
+
+    function closeAddModal() {
+        document.getElementById('addTaskModal').style.display = 'none';
+        document.getElementById('addTaskForm').reset();
+    }
+
+    async function submitAddTask(event) {
+        event.preventDefault();
+        const payload = {
+            task_name: document.getElementById('new_task_name').value.trim(),
+            project_name: document.getElementById('new_project_name').value,
+            due_date: document.getElementById('new_due_date').value,
+            status: document.getElementById('new_status').value
+        };
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            const response = await fetch('/api/tasks/add/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                closeAddModal();
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to add task.');
+            }
+        } catch (err) {
+            alert('Network error while adding task.');
+        }
+    }
+
+    function openEditSuccessModal(msg) {
+        if (msg) document.getElementById('editSuccessText').textContent = msg;
+        document.getElementById('editSuccessModal').style.display = 'flex';
+    }
+
+    function closeEditSuccessModal() {
+        document.getElementById('editSuccessModal').style.display = 'none';
+        window.location.reload();
+    }
+</script>
+{% endblock %}

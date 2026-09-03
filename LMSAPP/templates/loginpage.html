@@ -65,7 +65,7 @@
             loginBtn.textContent = 'Login...';
 
             try {
-                const response = await fetch('{% url "login_api" %}', {
+                const response = await fetch('/api/login/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
