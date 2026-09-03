@@ -1,9 +1,7 @@
 from django.db import connection
 
-def ensure_tasks_table():
-    """
-    Ensures the 'tasks' table exists in the database.
-    """
+def tasks_table():
+    
     with connection.cursor() as cursor:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS tasks (
@@ -17,10 +15,8 @@ def ensure_tasks_table():
         """)
 
 def get_all_tasks_service():
-    """
-    Fetches all tasks from the 'tasks' table.
-    """
-    ensure_tasks_table()
+    
+    tasks_table()
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT id, task_name, project_name, due_date, status
@@ -41,22 +37,18 @@ def get_all_tasks_service():
     return tasks
 
 def add_task_service(task_name, project_name, due_date, status):
-    """
-    Adds a new task into the 'tasks' table.
-    """
-    ensure_tasks_table()
+
+    tasks_table()
     with connection.cursor() as cursor:
         cursor.execute("""
             INSERT INTO tasks (task_name, project_name, due_date, status)
             VALUES (%s, %s, %s, %s)
-        """, [task_name, project_name, due_date or '', status or 'Not Worked'])
+        """, [task_name, project_name, due_date , status ])
     return True
 
 def update_task_service(task_id, task_name, project_name, due_date, status):
-    """
-    Updates an existing task in the 'tasks' table.
-    """
-    ensure_tasks_table()
+    
+    tasks_table()
     with connection.cursor() as cursor:
         cursor.execute("""
             UPDATE tasks
@@ -66,21 +58,17 @@ def update_task_service(task_id, task_name, project_name, due_date, status):
     return True
 
 def delete_task_service(task_id):
-    """
-    Deletes a task from the 'tasks' table.
-    """
-    ensure_tasks_table()
+    
+    tasks_table()
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM tasks WHERE id = %s", [task_id])
     return True
 
 def bulk_delete_tasks_service(task_ids):
-    """
-    Deletes multiple tasks from the 'tasks' table by IDs list.
-    """
+
     if not task_ids:
         return True
-    ensure_tasks_table()
+    tasks_table()
     format_strings = ','.join(['%s'] * len(task_ids))
     with connection.cursor() as cursor:
         cursor.execute(f"DELETE FROM tasks WHERE id IN ({format_strings})", task_ids)

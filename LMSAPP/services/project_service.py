@@ -88,7 +88,9 @@ def delete_project_service(project_id):
     return True
 
 def bulk_delete_projects_service(project_ids):
-   
+    """
+    Deletes multiple project records from the 'projects' table permanently by IDs list.
+    """
     if not project_ids:
         return True
     ensure_projects_table()
