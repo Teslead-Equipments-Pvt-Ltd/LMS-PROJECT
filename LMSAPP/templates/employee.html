@@ -2,9 +2,252 @@
 {% load static %}
 
 
+
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/employee.css' %}">
+
+<div class="table-container">
+
+    <div class="table-header">
+        <h2>Employee Details</h2>
+        <button class="add-btn" id="add_employee" onclick="addemployee()">+ Add Employee</button>
+    </div>
+
+    <div class="table-scroll">
+        <table class="employee-table">
+
+            <thead>
+                <tr>
+                    <th>S.no</th>
+                    <th>Employee ID</th>
+                    <th>Employee Name</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody class="table_body">
+                {% for employee in employees %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ employee.employee_id }}</td>
+                    <td>{{ employee.username }}</td>
+                    <td>{{ employee.role }}</td>
+                    <td>
+                        <!-- Updated -->
+                        <button class="edit-btn"
+                            onclick="editemployee('{{ employee.employee_id }}', '{{ employee.username }}', '{{ employee.role }}')">Edit</button>
+
+                       <button class="delete-btn" onclick="deleteEmployee('{{ employee.employee_id }}')">Delete</button>
+
+                    </td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+    </div>
+
+</div>
+
+<!-- Edit Employee Modal -->
+<div class="modal-overlay" id="edit_model" style="display: none;">
+    <div class="modal-content">
+        <h3>Edit Employee</h3>
+        <form id="editEmployeeForm" onsubmit="submitEditEmployee(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Employee ID</label>
+                <input type="text" id="employee_id" placeholder="Employee ID" readonly>
+            </div>
+            <div class="form-group">
+                <label>Employee Name</label>
+                <input type="text" id="username" placeholder="Employee Name" required>
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <input type="text" id="role" placeholder="Role" required>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn-update">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- Add Employee Modal -->
+<div class="modal-overlay" id="add_employee_modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Add Employee</h3>
+        <form id="addEmployeeForm" onsubmit="submitAddEmployee(event)">
+            {% csrf_token %}
+            <div class="form-group">
+                <label>Employee ID</label>
+                <input type="text" id="add_employee_id" placeholder="e.g. EMP030" required>
+            </div>
+            <div class="form-group">
+                <label>Employee Name</label>
+                <input type="text" id="add_username" placeholder="Employee Name" required>
+            </div>
+            <div class="form-group">
+                <label>Role</label>
+                <select id="add_role" required style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    <option value="EMPLOYEE">EMPLOYEE</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="password" required>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+                <button type="submit" class="btn-update">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 
-<h1>this is employee page </h1>
+
+<script>
+    // 1. Open popup & populate data
+    function editemployee(employee_id, username, role) {
+        const editModal = document.getElementById('edit_model');
+        document.getElementById('employee_id').value = employee_id;
+        document.getElementById('username').value = username;
+        document.getElementById('role').value = role;
+        editModal.style.display = 'flex';
+    }
+
+    // 2. Close popup
+    function closeEditModal() {
+        document.getElementById('edit_model').style.display = 'none';
+    }
+
+    // 3. Submit Update API
+    function submitEditEmployee(event) {
+        event.preventDefault(); // Prevents normal page refresh
+
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+        const employee_id = document.getElementById('employee_id').value;
+        const username = document.getElementById('username').value;
+        const role = document.getElementById('role').value;
+
+        fetch('/api/update_employee/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf
+            },
+            body: JSON.stringify({
+                employee_id: employee_id,
+                username: username,
+                role: role
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+               
+                closeEditModal();
+                location.reload(); // Refresh table with updated data
+            } else {
+                alert(data.message || 'Failed to update employee.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Something went wrong!');
+        });
+    }
+
+    // 4. Delete Employee API
+    function deleteEmployee(employee_id) {
+        if (!confirm(`Are you sure you want to delete employee ${employee_id}?`)) {
+            return;
+        }
+
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        fetch('/api/delete_employee/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf
+            },
+            body: JSON.stringify({
+                employee_id: employee_id
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload(); // Refresh table to remove deleted row
+            } else {
+                alert(data.message || 'Failed to delete employee.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Something went wrong!');
+        });
+    }
+
+    // Open Add Modal
+    function addemployee() {
+        document.getElementById('add_employee_modal').style.display = 'flex';
+    }
+
+    // Close Add Modal
+    function closeAddModal() {
+        document.getElementById('add_employee_modal').style.display = 'none';
+        document.getElementById('addEmployeeForm').reset();
+    }
+
+    // Submit Add Employee Form
+    function submitAddEmployee(event) {
+        event.preventDefault();
+
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+        const employee_id = document.getElementById('add_employee_id').value;
+        const username = document.getElementById('add_username').value;
+        const role = document.getElementById('add_role').value;
+        const password = document.getElementById('password').value; // <-- 1. GET PASSWORD
+
+        fetch('/api/add_employee/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf
+            },
+            body: JSON.stringify({
+                employee_id: employee_id,
+                username: username,
+                role: role,
+                password: password  // <-- 2. SEND PASSWORD
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                closeAddModal();
+                location.reload();
+            } else {
+                alert(data.message || 'Failed to add employee.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Something went wrong!');
+        });
+    }
+
+</script>
+
+
+
 
 {% endblock%}

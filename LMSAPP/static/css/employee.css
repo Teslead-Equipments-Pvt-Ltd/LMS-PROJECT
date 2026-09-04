@@ -1,0 +1,205 @@
+
+
+.table-container {
+    width: 100%;
+    max-width: 1100px;
+    margin: auto;
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* Header */
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.table-header h2 {
+    font-size: 24px;
+    color: #222;
+}
+
+/* Add button */
+
+.add-btn {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.add-btn:hover {
+    background-color: #1d4ed8;
+}
+
+/* Table */
+
+/* Table Scroll Container */
+.table-scroll {
+    max-height: 420px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Custom scrollbar */
+.table-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+    background: #f8fafc;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 4px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+}
+
+.employee-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.employee-table th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background-color: #f1f5f9;
+    color: #475569;
+    font-size: 14px;
+    text-align: left;
+    padding: 15px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.employee-table td {
+    padding: 15px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+    font-size: 14px;
+}
+
+.employee-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Actions */
+
+.edit-btn,
+.delete-btn {
+    border: none;
+    padding: 7px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.edit-btn {
+    background-color: #e0f2fe;
+    color: #0369a1;
+}
+
+.delete-btn {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.edit-btn:hover {
+    background-color: #bae6fd;
+}
+
+.delete-btn:hover {
+    background-color: #fecaca;
+}
+
+
+/* Dark background overlay that covers the entire screen */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* White popup card */
+.modal-content {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 10px;
+    width: 420px;
+    max-width: 90%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-content h3 {
+    margin-bottom: 16px;
+    font-size: 20px;
+    color: #1e293b;
+}
+
+.form-group {
+    margin-bottom: 14px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: #475569;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn-cancel {
+    background-color: #94a3b8;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-update {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
