@@ -1,12 +1,14 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}LOGNOTE{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
 </head>
+
 <body>
 
     <!-- Sidebar Navigation -->
@@ -16,13 +18,13 @@
         </div>
 
         <ul class="sidebar-menu">
-            <li><a href="{% url 'base_page' %}">Dashboard</a></li>
+            <li><a href="{% url 'dashboard_page' %}">Dashboard</a></li>
             <li><a href=" ">Notifications</a></li>
             <li><a href="{% url 'task_page' %}">Task</a></li>
             <li><a href="{% url 'project_page' %}">Project</a></li>
             <li><a href=" ">Assigned Tasks</a></li>
             <li><a href=" ">Task Request</a></li>
-            <li><a href="{% url 'employee_page' %} ">Add Employees</a></li>
+            <li><a href="{% url 'employee_page' %}">Add Employees</a></li>
         </ul>
     </div>
 
@@ -49,4 +51,5 @@
     </div>
 
 </body>
+
 </html>

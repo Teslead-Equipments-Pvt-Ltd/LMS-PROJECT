@@ -2,9 +2,7 @@ import datetime
 from django.db import connection
 
 def ensure_projects_table():
-    """
-    Ensures the 'projects' table exists in the database.
-    """
+    
     with connection.cursor() as cursor:
         cursor.execute("""
         #     CREATE TABLE IF NOT EXISTS projects (
@@ -20,10 +18,7 @@ def ensure_projects_table():
         # """)
 
 def get_all_projects_service():
-    """
-    
-    """
-    ensure_projects_table()
+
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT id, project_name, project_type, status, created_date, completion_date, due_date
@@ -39,20 +34,23 @@ def get_all_projects_service():
             'project_name': row[1],
             'project_type': row[2],
             'status': row[3],
-            'created_date': row[4] or '',
-            'completion_date': row[5] or '',
-            'due_date': row[6] or '',
+            'created_date': row[4] ,
+            'completion_date': row[5] ,
+            'due_date': row[6] 
         })
     return projects
 
 def add_project_service(project_name, project_type, status, due_date):
    
-    ensure_projects_table()
     today_str = datetime.date.today().strftime("%Y-%m-%d")
     created_date = today_str if status == "In Progress" else ""
     completion_date = today_str if status == "Completed" else ""
     
     with connection.cursor() as cursor:
+        cursor.execute("SELECT id FROM projects WHERE LOWER(project_name) = LOWER(%s)", [project_name.strip()])
+        if cursor.fetchone():
+            raise ValueError(f"Project '{project_name.strip()}' already exists.")
+
         cursor.execute("""
             INSERT INTO projects (project_name, project_type, status, created_date, completion_date, due_date)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -61,7 +59,6 @@ def add_project_service(project_name, project_type, status, due_date):
 
 def update_project_service(project_id, project_name, project_type, status, created_date, completion_date, due_date):
     
-    ensure_projects_table()
     today_str = datetime.date.today().strftime("%Y-%m-%d")
     
    
@@ -71,6 +68,10 @@ def update_project_service(project_id, project_name, project_type, status, creat
         completion_date = today_str
 
     with connection.cursor() as cursor:
+        cursor.execute("SELECT id FROM projects WHERE LOWER(project_name) = LOWER(%s) AND id != %s", [project_name.strip(), project_id])
+        if cursor.fetchone():
+            raise ValueError(f"Project '{project_name.strip()}' already exists.")
+
         cursor.execute("""
             UPDATE projects
             SET project_name = %s, project_type = %s, status = %s, created_date = %s, completion_date = %s, due_date = %s
@@ -79,21 +80,16 @@ def update_project_service(project_id, project_name, project_type, status, creat
     return True
 
 def delete_project_service(project_id):
-    """
-    Deletes a project record from the 'projects' table permanently.
-    """
-    ensure_projects_table()
+  
+    
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM projects WHERE id = %s", [project_id])
     return True
 
 def bulk_delete_projects_service(project_ids):
-    """
-    Deletes multiple project records from the 'projects' table permanently by IDs list.
-    """
+  
     if not project_ids:
         return True
-    ensure_projects_table()
     format_strings = ','.join(['%s'] * len(project_ids))
     with connection.cursor() as cursor:
         cursor.execute(f"DELETE FROM projects WHERE id IN ({format_strings})", project_ids)

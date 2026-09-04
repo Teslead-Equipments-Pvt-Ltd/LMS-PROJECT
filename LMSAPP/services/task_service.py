@@ -31,14 +31,14 @@ def get_all_tasks_service():
             'id': row[0],
             'task_name': row[1],
             'project_name': row[2],
-            'due_date': row[3] or '',
+            'due_date': row[3],
             'status': row[4],
         })
     return tasks
 
 def add_task_service(task_name, project_name, due_date, status):
 
-    tasks_table()
+    
     with connection.cursor() as cursor:
         cursor.execute("""
             INSERT INTO tasks (task_name, project_name, due_date, status)
@@ -48,7 +48,7 @@ def add_task_service(task_name, project_name, due_date, status):
 
 def update_task_service(task_id, task_name, project_name, due_date, status):
     
-    tasks_table()
+   
     with connection.cursor() as cursor:
         cursor.execute("""
             UPDATE tasks
@@ -59,7 +59,7 @@ def update_task_service(task_id, task_name, project_name, due_date, status):
 
 def delete_task_service(task_id):
     
-    tasks_table()
+   
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM tasks WHERE id = %s", [task_id])
     return True

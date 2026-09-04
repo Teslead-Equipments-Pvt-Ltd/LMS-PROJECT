@@ -77,7 +77,7 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    window.location.href = data.redirect_url || '/base/';
+                    window.location.href = data.redirect_url || '/dashboard/';
                 } else {
                     alert(data.message || 'Invalid Username/Employee ID or Password.');
                 }

@@ -32,6 +32,8 @@ def add_project_api(request):
 
         add_project_service(project_name, project_type, status, due_date)
         return JsonResponse({'status': 'success', 'message': 'Project created successfully.'})
+    except ValueError as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
@@ -54,6 +56,8 @@ def update_project_api(request):
 
         update_project_service(project_id, project_name, project_type, status, created_date, completion_date, due_date)
         return JsonResponse({'status': 'success', 'message': 'Project updated successfully.'})
+    except ValueError as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 

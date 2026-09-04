@@ -5,17 +5,14 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/project.css' %}">
+<link rel="stylesheet" href="{% static 'sweetalert2/sweetalert2.min.css' %}">
 
 <div class="card">
     <div class="project-header">
         <h2>Project</h2>
         <div class="header-actions">
-            <button class="btn-bulk-delete" id="bulkDeleteBtn" onclick="openBulkDeleteModal()">
-                Bulk Delete <span id="selectedCount">(0)</span>
-            </button>
-            <button class="btn-add-project" onclick="openAddModal()">
-                + Add New Project
-            </button>
+            <button class="btn-bulk-delete" id="bulkDeleteBtn" onclick="openBulkDeleteModal()">Bulk Delete <span id="selectedCount">(0)</span></button>
+            <button class="btn-add-project" onclick="openAddModal()">+ Add New Project</button>
         </div>
     </div>
 
@@ -96,7 +93,7 @@
         <form id="addProjectForm" onsubmit="submitAddProject(event)">
             {% csrf_token %}
             <div class="form-group-modal">
-                <label for="new_project_name">Project Name</label>
+                <label for="new_project_name">Project Name<span class="required">*</span></label>
                 <input type="text" id="new_project_name" required placeholder="Enter project name">
             </div>
             <div class="form-group-modal">
@@ -116,7 +113,7 @@
                 </select>
             </div>
             <div class="form-group-modal">
-                <label for="new_due_date">Due Date</label>
+                <label for="new_due_date">Due Date<span class="required">*</span></label>
                 <input type="date" id="new_due_date" required>
             </div>
             <div class="modal-actions">
@@ -208,7 +205,7 @@
         </div>
     </div>
 </div>
-
+<script src="{% static 'sweetalert2/sweetalert2.min.js' %}"></script>
 <script>
     let activeDeleteId = null;
 
@@ -343,9 +340,23 @@
             const data = await response.json();
             if (response.ok && data.status === 'success') {
                 closeEditModal();
-                openEditSuccessModal(`Project "${editProjectData.project_name}" updated successfully!`);
+                // openEditSuccessModal(`Project "${editProjectData.project_name}" updated successfully!`);
+                await Swal.fire({
+                    icon:'success',
+                    title:'Success',
+                    width:'350px',
+                    text:'Project Updated Successfully',
+                    confirmButtonText:'OK'
+                })
+                window.location.reload();
             } else {
-                alert(data.message || 'Failed to update project.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to update project.',
+                    confirmButtonText: 'OK',
+                    width: '350px'
+                });
             }
         } catch (err) {
             alert('Network error while updating project.');
@@ -354,9 +365,21 @@
 
     function openSingleDeleteModal(id, name) {
         activeDeleteId = id;
-        document.getElementById('deleteProjectName').textContent = name;
-        document.getElementById('singleDeleteModal').style.display = 'flex';
-        document.getElementById('confirmSingleDeleteBtn').onclick = submitSingleDelete;
+        // document.getElementById('deleteProjectName').textContent = name;
+        // document.getElementById('singleDeleteModal').style.display = 'flex';
+        // document.getElementById('confirmSingleDeleteBtn').onclick = submitSingleDelete;
+        Swal.fire({
+            icon:'question',
+            title:'Are you sure want to delete this project?',
+            width:'350px',
+            showCancelButton:'true',
+            confirmButtonText:'Yes,Delete it!',
+            cancelButtonText:'Cancel'
+        }).then(function(result){
+            if(result.isConfirmed){
+                submitSingleDelete();
+            }
+        })
     }
 
     function closeSingleDeleteModal() {
@@ -376,10 +399,22 @@
             });
             const data = await response.json();
             if (response.ok && data.status === 'success') {
-                closeSingleDeleteModal();
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Project Deleted Successfully',
+                    width: '350px',
+                    confirmButtonText: 'OK'
+                });
                 window.location.reload();
             } else {
-                alert(data.message || 'Failed to delete project.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to delete project.',
+                    confirmButtonText: 'OK',
+                    width: '350px'
+                });
             }
         } catch (err) {
             alert('Network error while deleting project.');
@@ -399,8 +434,14 @@
 
     async function submitBulkDelete() {
         const checkboxes = document.querySelectorAll('.row-checkbox:checked');
-        const ids = Array.from(checkboxes).map(cb => parseInt(cb.value));
-        if (ids.length === 0) return;
+        let count = [];
+        checkboxes.forEach(function(checkbox) {
+            count.push(parseInt(checkbox.value));
+        });
+
+        if (count.length === 0) {
+            return;
+        }
 
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
@@ -413,12 +454,31 @@
             const data = await response.json();
             if (response.ok && data.status === 'success') {
                 closeBulkDeleteModal();
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Projects Deleted Successfully',
+                    width: '350px',
+                    confirmButtonText: 'OK'
+                });
                 window.location.reload();
             } else {
-                alert(data.message || 'Failed to bulk delete projects.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to bulk delete projects.',
+                    confirmButtonText: 'OK',
+                    width: '350px'
+                });
             }
         } catch (err) {
-            alert('Network error while bulk deleting projects.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Network error while bulk deleting projects.',
+                confirmButtonText: 'OK',
+                width: '350px'
+            });
         }
     }
 
@@ -450,23 +510,41 @@
             const data = await response.json();
             if (response.ok && data.status === 'success') {
                 closeAddModal();
+                await Swal.fire({
+                    icon:'success',
+                    title:'Success',
+                    width:'350px',
+                    text:'Project Added Successfully',
+                    confirmButtonText:'OK'
+                })
                 window.location.reload();
             } else {
-                alert(data.message || 'Failed to add project.');
+                Swal.fire({
+                    icon:'error',
+                    title:'Error!',
+                    text:data.message || 'Failed to add project.',
+                    confirmButtonText:'OK'
+                })
             }
         } catch (err) {
-            alert('Network error while adding project.');
+            Swal.fire({
+                icon:'error',
+                title:'Error!',
+                text:'Network Error while adding the project',
+                confirmButtonText:'OK',
+                width:'350px'
+            })
         }
     }
 
-    function openEditSuccessModal(msg) {
-        if (msg) document.getElementById('editSuccessText').textContent = msg;
-        document.getElementById('editSuccessModal').style.display = 'flex';
-    }
+    // function openEditSuccessModal(msg) {
+    //     if (msg) document.getElementById('editSuccessText').textContent = msg;
+    //     document.getElementById('editSuccessModal').style.display = 'flex';
+    // }
 
-    function closeEditSuccessModal() {
-        document.getElementById('editSuccessModal').style.display = 'none';
-        window.location.reload();
-    }
+    // function closeEditSuccessModal() {
+    //     document.getElementById('editSuccessModal').style.display = 'none';
+    //     window.location.reload();
+    // }
 </script>
 {% endblock %}

@@ -4,4 +4,4 @@ def loginpage(request):
     return render(request, "loginpage.html")
 
 def base_page(request):
-    return render(request, "base.html")
+    return render(request, "dashboard.html")

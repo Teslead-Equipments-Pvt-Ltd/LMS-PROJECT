@@ -27,7 +27,7 @@ def login_api(request):
             
             return JsonResponse({
                 'message': 'Login successful',
-                'redirect_url': '/base/',
+                'redirect_url': '/dashboard/',
                 'user_name': user['user_name'],
                 'user_type': user['user_type'],
              

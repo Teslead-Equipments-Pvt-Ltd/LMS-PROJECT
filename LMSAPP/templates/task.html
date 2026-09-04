@@ -5,6 +5,7 @@
 
 {% block content %}
 <link rel="stylesheet" href="{% static 'css/task.css' %}">
+<link rel="stylesheet" href="{% static 'sweetalert2/sweetalert2.min.css' %}">
 
 <div class="card">
     <div class="task-header">
@@ -32,6 +33,7 @@
                     <th>Due Date</th>
                     <th>Status</th>
                     <th style="text-align: center;">Actions</th>
+                    <th>Employee Name</th>
                 </tr>
             </thead>
             <tbody id="taskTableBody">
@@ -82,11 +84,11 @@
         <form id="addTaskForm" onsubmit="saveTask(event)">
             {% csrf_token %}
             <div class="form-group-modal">
-                <label for="new_task_name">Task Name</label>
+                <label for="new_task_name">Task Name<span class="required">*</span></label>
                 <input type="text" id="new_task_name" required placeholder="Enter task name">
             </div>
             <div class="form-group-modal">
-                <label for="new_project_name">Project Name</label>
+                <label for="new_project_name">Project Name<span class="required">*</span></label>
                 <select id="new_project_name" required>
                     <option value="" disabled selected>-- Select Project --</option>
                     {% for proj in projects %}
@@ -96,8 +98,8 @@
                 </select>
             </div>
             <div class="form-group-modal">
-                <label for="new_due_date">Due Date</label>
-                <input type="date" id="new_due_date" required>
+                <label for="new_due_date">Due Date<span class="required">*</span></label>
+                <input type="date" id="new_due_date"  required>
             </div>
             <div class="form-group-modal">
                 <label for="new_status">Status</label>
@@ -191,8 +193,9 @@
         </div>
     </div>
 </div>
-
+<script src="{% static 'sweetalert2/sweetalert2.min.js' %}"></script>
 <script>
+     
     let activeDeleteId = null;
 
     // 1. Select All Checkboxes
@@ -243,7 +246,7 @@
         }
     }
 
-    // 4. Add Task Functions
+    
     function openAdd() {
         document.getElementById('addTaskModal').style.display = 'flex';
     }
@@ -272,13 +275,29 @@
             const data = await response.json();
             if (response.ok && data.status === 'success') {
                 closeAdd();
-                alert("Task added successfully")
+                await Swal.fire({
+                    icon:'success',
+                    title:'Success',
+                    text:'Task Added Successfully',
+                    width:'350px',
+                    confirmButtonText:'Ok'
+                })
                 window.location.reload();
             } else {
-                alert(data.message || 'Failed to add task.');
+                Swal.fire({
+                    icon:'error',
+                    title:'Error!',
+                    text:data.message || 'Failed to add task.',
+                    confirmButtonText:'OK'
+                })
             }
         } catch (err) {
-            alert('Network error while adding task.');
+            Swal.fire({
+                icon:'error',
+                title:'Error',
+                text:'Network error',
+                confirmButtonText:'OK'
+            })
         }
     }
 
@@ -316,7 +335,14 @@
             const data = await response.json();
             if (response.ok && data.status === 'success') {
                 closeEdit();
-                showSuccess(`Task "${tasks.task_name}" updated successfully!`);
+                Swal.fire({
+                    icon:'success',
+                    title:'success',
+                    text:'Task Updated Successfully',
+                    width:'350px',
+                    confirmButtonText:'OK'
+                })
+                // showSuccess(`Task "${tasks.task_name}" updated successfully!`);
             } else {
                 alert(data.message || 'Failed to update task.');
             }
@@ -328,9 +354,18 @@
     // 6. Single Delete Task Functions
     function openDelete(id, name) {
         activeDeleteId = id;
-        document.getElementById('deleteTaskName').textContent = name;
-        document.getElementById('singleDeleteModal').style.display = 'flex';
-        document.getElementById('confirmSingleDeleteBtn').onclick = deleteTask;
+        Swal.fire({
+            icon: 'question',
+            title: 'Are you sure want to delete this task?',
+            width: '350px',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete it!',
+            cancelButtonText: 'Cancel'
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                deleteTask();
+            }
+        });
     }
 
     function closeDelete() {
@@ -350,13 +385,31 @@
             });
             const data = await response.json();
             if (response.ok && data.status === 'success') {
-                closeDelete();
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Task Deleted Successfully',
+                    width: '350px',
+                    confirmButtonText: 'OK'
+                });
                 window.location.reload();
             } else {
-                alert(data.message || 'Failed to delete task.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to delete task.',
+                    confirmButtonText: 'OK',
+                    width: '350px'
+                });
             }
         } catch (err) {
-            alert('Network error while deleting task.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Network error while deleting task.',
+                confirmButtonText: 'OK',
+                width: '350px'
+            });
         }
     }
 
@@ -388,24 +441,43 @@
             const data = await response.json();
             if (response.ok && data.status === 'success') {
                 closeBulkDelete();
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Tasks Deleted Successfully',
+                    width: '350px',
+                    confirmButtonText: 'OK'
+                });
                 window.location.reload();
             } else {
-                alert(data.message || 'Failed to bulk delete tasks.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to bulk delete tasks.',
+                    confirmButtonText: 'OK',
+                    width: '350px'
+                });
             }
         } catch (err) {
-            alert('Network error while bulk deleting tasks.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Network error while bulk deleting tasks.',
+                confirmButtonText: 'OK',
+                width: '350px'
+            });
         }
     }
 
     // 8. Success Modal Functions
-    function showSuccess(msg) {
-        if (msg) document.getElementById('editSuccessText').textContent = msg;
-        document.getElementById('editSuccessModal').style.display = 'flex';
-    }
+    // function showSuccess(msg) {
+    //     if (msg) document.getElementById('editSuccessText').textContent = msg;
+    //     document.getElementById('editSuccessModal').style.display = 'flex';
+    // }
 
-    function closeSuccess() {
-        document.getElementById('editSuccessModal').style.display = 'none';
-        window.location.reload();
-    }
+    // function closeSuccess() {
+    //     document.getElementById('editSuccessModal').style.display = 'none';
+    //     window.location.reload();
+    // }
 </script>
 {% endblock %}

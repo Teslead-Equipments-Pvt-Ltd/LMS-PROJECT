@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+
+<div class="dashboard-container">
+    <h2 class="dashboard-title">Dashboard Overview</h2>
+
+    <!-- Stat Cards Grid -->
+    <div class="stats-grid">
+        <!-- Total Projects Card -->
+        <div class="stat-card card-projects">
+            <div class="stat-header">
+                <h3>Total Projects</h3>
+                <div class="stat-icon">📁</div>
+            </div>
+            <div class="stat-value">{{ total_projects }}</div>
+            <div class="status-breakdown">
+                <div class="status-pill not-worked">
+                    <span>Not Worked</span>
+                    <span class="status-count">{{ project_not_worked }}</span>
+                </div>
+                <div class="status-pill in-progress">
+                    <span>In Progress</span>
+                    <span class="status-count">{{ project_in_progress }}</span>
+                </div>
+                <div class="status-pill pending">
+                    <span>Pending</span>
+                    <span class="status-count">{{ project_pending }}</span>
+                </div>
+                <div class="status-pill completed">
+                    <span>Completed</span>
+                    <span class="status-count">{{ project_completed }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Tasks Card -->
+        <div class="stat-card card-tasks">
+            <div class="stat-header">
+                <h3>Total Tasks</h3>
+                <div class="stat-icon">📋</div>
+            </div>
+            <div class="stat-value">{{ total_tasks }}</div>
+            <div class="status-breakdown">
+                <div class="status-pill not-worked">
+                    <span>Not Worked</span>
+                    <span class="status-count">{{ task_not_worked }}</span>
+                </div>
+                <div class="status-pill in-progress">
+                    <span>In Progress</span>
+                    <span class="status-count">{{ task_in_progress }}</span>
+                </div>
+                <div class="status-pill pending">
+                    <span>Pending</span>
+                    <span class="status-count">{{ task_pending }}</span>
+                </div>
+                <div class="status-pill completed">
+                    <span>Completed</span>
+                    <span class="status-count">{{ task_completed }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
