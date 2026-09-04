@@ -18,6 +18,7 @@ api_patterns = [
     path('', include('LMSAPP.urls.api_urls.login_api_urls')),
     path('', include('LMSAPP.urls.api_urls.project_api_urls')),
     path('', include('LMSAPP.urls.api_urls.task_api_urls')),
+    path('',  include('LMSAPP.urls.api_urls.employee_api_urls')),
 ]
 
 urlpatterns = page_patterns + api_patterns
