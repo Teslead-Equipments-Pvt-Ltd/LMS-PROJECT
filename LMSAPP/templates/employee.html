@@ -28,6 +28,7 @@
 
             <tbody class="table_body">
                 {% for employee in employees %}
+                
                 <tr>
                     <td>{{ forloop.counter }}</td>
                     <td>{{ employee.employee_id }}</td>
@@ -78,7 +79,7 @@
                 <input type="password" id="edit_password" placeholder="Enter new password (optional)">
             </div>
             <div id="password_permission_note" style="display: none; font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
-                <em>Password can only be changed by Super Admin or this employee.</em>
+            
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>

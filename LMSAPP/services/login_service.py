@@ -57,3 +57,8 @@ def authenticate_user_service(username, password):
 
     return None, 'Invalid Username/Employee ID or Password.'
 
+
+def logout_service(request):
+    request.session.flush()
+    return True
+

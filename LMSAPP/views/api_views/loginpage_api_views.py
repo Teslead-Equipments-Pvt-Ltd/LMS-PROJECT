@@ -29,6 +29,8 @@ def login_api(request):
         # 3. Authenticate against the users table
         user, error_message = authenticate_user_service(username, password)
 
+        
+
         if not user:
             return JsonResponse({
                 'status': 'error',
@@ -44,7 +46,7 @@ def login_api(request):
         request.session['user_name'] = user.get('user_name')
         request.session['user_type'] = user.get('user_type')
         request.session['role'] = user.get('role')
-        request.session['superuser'] = user.get('superuser', False)
+        # request.session['superuser'] = user.get('superuser', False)
 
         # 6. Success response
         return JsonResponse({
