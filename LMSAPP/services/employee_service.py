@@ -1,6 +1,5 @@
 from django.db import connection
-from django.contrib.auth.hashers import make_password  # <-- ADD THIS IMPORT
-
+from django.contrib.auth.hashers import make_password
 def get_all_employees():
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -22,16 +21,29 @@ def get_all_employees():
 
 
 # 1. EDIT / UPDATE Employee Service
-def update_employee_service(employee_id, username, role):
-    """
-    Updates the username and role for an employee in the 'users' table.
-    """
+def update_employee_service(employee_id, username, role, password=None, is_super_admin=False):
+  
     with connection.cursor() as cursor:
-        cursor.execute("""
-            UPDATE users
-            SET username = %s, role = %s
-            WHERE employee_id = %s
-        """, [username, role, employee_id])
+        # Non-superadmin cannot change roles
+        if not is_super_admin:
+            cursor.execute("SELECT role FROM users WHERE employee_id = %s", [employee_id])
+            row = cursor.fetchone()
+            if row:
+                role = row[0]
+
+        if password:
+            hashed_pwd = make_password(password)
+            cursor.execute("""
+                UPDATE users
+                SET username = %s, role = %s, password = %s
+                WHERE employee_id = %s
+            """, [username, role, hashed_pwd, employee_id])
+        else:
+            cursor.execute("""
+                UPDATE users
+                SET username = %s, role = %s
+                WHERE employee_id = %s
+            """, [username, role, employee_id])
     return True
 
 
@@ -50,13 +62,15 @@ def delete_employee_service(employee_id):
 
 # 3. ADD Employee Service
 def add_employee_service(employee_id, username, role, password):
-    """
-    Inserts a new employee record into the 'users' table.
-    """
     hashed_pwd = make_password(password)
     with connection.cursor() as cursor:
+        cursor.execute("SELECT id FROM users WHERE employee_id = %s", [employee_id])
+        if cursor.fetchone():
+            raise ValueError(f"Employee ID '{employee_id}' already exists.")
+
         cursor.execute("""
             INSERT INTO users (employee_id, username, role, password)
             VALUES (%s, %s, %s, %s)
         """, [employee_id, username, role, hashed_pwd])
     return True
+
