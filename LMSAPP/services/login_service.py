@@ -1,87 +1,27 @@
 from django.db import connection
-from django.contrib.auth.hashers import make_password, check_password
-
-def ensure_employee_table():
-   
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS employee (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(150) NOT NULL UNIQUE,
-                password VARCHAR(255) NOT NULL,
-                email VARCHAR(254) NULL,
-                role_id INT DEFAULT 3,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-        """)
-
-
-        try:
-            cursor.execute("ALTER TABLE employee ADD COLUMN role_id INT DEFAULT 3;")
-        except Exception:
-            pass
-
-        # Insert or Update Superadmin (username: superadmin, password: superadmin123, role_id: 1)
-        superadmin_pwd = make_password("superadmin123")
-        cursor.execute("""
-            INSERT INTO employee (username, password, email, role_id)
-            VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE password = %s, role_id = 1;
-        """, ['superadmin', superadmin_pwd, 'superadmin@gmail.com', 1, superadmin_pwd])
-
-        # Insert or Update Admin (username: admin, password: admin123, role_id: 2)
-        admin_pwd = make_password("admin123")
-        cursor.execute("""
-            INSERT INTO employee (username, password, email, role_id)
-            VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE password = %s, role_id = 2;
-        """, ['admin', admin_pwd, 'admin@gmail.com', 2, admin_pwd])
-
-        # Insert or Update Employee (username: employee, password: employee123, role_id: 3)
-        employee_pwd = make_password("employee123")
-        cursor.execute("""
-            INSERT INTO employee (username, password, email, role_id)
-            VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE password = %s, role_id = 3;
-        """, ['employee', employee_pwd, 'employee@gmail.com', 3, employee_pwd])
-
-def add_employee_to_db(username, password, email="", role_id=3):
-    
-    ensure_employee_table()
-    hashed_password = make_password(password)
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            INSERT INTO employee (username, password, email, role_id)
-            VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE password = %s, email = %s, role_id = %s;
-        """, [username, hashed_password, email, role_id, hashed_password, email, role_id])
-    return True
+from django.contrib.auth.hashers import check_password
 
 def authenticate_user_service(username, password):
-    """
-  
-    """
+
     if not username or not password:
         return None, 'Username/Employee ID and password are required.'
 
     username = username.strip()
 
-    try:
-        ensure_employee_table()
-    except Exception as e:
-        print(f"Table initialization error: {e}")
-
-    # Fetch user record by username from employee table using raw SQL
     with connection.cursor() as cursor:
         cursor.execute(
-            "SELECT id, username, password, email, role_id FROM employee WHERE username = %s",
-            [username]
+            """
+            SELECT id, employee_id, username, password, role 
+            FROM users 
+            WHERE username = %s OR employee_id = %s
+            LIMIT 1
+            """,
+            [username, username]
         )
         row = cursor.fetchone()
 
     if row:
-        emp_id, db_username, db_password, db_email, db_role_id = row
-        db_role_id = db_role_id or 3
+        user_id, emp_id, db_username, db_password, db_role = row
 
         # Verify password (hashed or plain text fallback)
         is_valid_pwd = False
@@ -92,11 +32,11 @@ def authenticate_user_service(username, password):
                 is_valid_pwd = True
 
         if is_valid_pwd:
-           
-            if db_role_id == 1:
+            # Map roles to user_type and superuser status
+            if db_role == 'SUPER_ADMIN':
                 user_type = 'Superadmin'
                 superuser = True
-            elif db_role_id == 2:
+            elif db_role == 'ADMIN':
                 user_type = 'Admin'
                 superuser = False
             else:
@@ -104,14 +44,16 @@ def authenticate_user_service(username, password):
                 superuser = False
 
             user_dict = {
-                'user_id': emp_id,
+                'user_id': user_id,
+                'employee_id': emp_id,
                 'user_name': db_username,
                 'user_type': user_type,
                 'superuser': superuser,
-                'email': db_email
+                'role': db_role
             }
             return user_dict, None
         else:
             return None, 'Invalid password. Please try again.'
 
     return None, 'Invalid Username/Employee ID or Password.'
+

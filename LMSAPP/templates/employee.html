@@ -59,7 +59,7 @@
             {% csrf_token %}
             <div class="form-group">
                 <label>Employee ID</label>
-                <input type="text" id="employee_id" placeholder="Employee ID" readonly>
+                <input type="text" id="employee_id" placeholder="Employee ID" readonly style="background-color: #f1f5f9; cursor: not-allowed;">
             </div>
             <div class="form-group">
                 <label>Employee Name</label>
@@ -67,7 +67,18 @@
             </div>
             <div class="form-group">
                 <label>Role</label>
-                <input type="text" id="role" placeholder="Role" required>
+                <select id="role" required style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    <option value="EMPLOYEE">EMPLOYEE</option>
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                </select>
+            </div>
+            <div class="form-group" id="edit_password_group">
+                <label>Change Password <span style="font-weight: normal; font-size: 12px; color: #64748b;">(leave blank to keep unchanged)</span></label>
+                <input type="password" id="edit_password" placeholder="Enter new password (optional)">
+            </div>
+            <div id="password_permission_note" style="display: none; font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
+                <em>Password can only be changed by Super Admin or this employee.</em>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
@@ -113,86 +124,161 @@
 
 
 <script>
+    const loggedInRole = "{{ request.session.role|default:'' }}";
+    
+    const loggedInEmpId = "{{ request.session.employee_id|default:'' }}";
+    const isSuperAdmin = (loggedInRole === 'SUPER_ADMIN');
+
     // 1. Open popup & populate data
     function editemployee(employee_id, username, role) {
         const editModal = document.getElementById('edit_model');
         document.getElementById('employee_id').value = employee_id;
         document.getElementById('username').value = username;
-        document.getElementById('role').value = role;
+
+        // Role dropdown
+        const roleSelect = document.getElementById('role');
+        roleSelect.value = role;
+        // Only Super Admin can change roles; regular employees have it disabled
+        roleSelect.disabled = !isSuperAdmin;
+
+        // Password change logic: Super Admin can change for anyone; Employee can only change their own
+        const editPasswordInput = document.getElementById('edit_password');
+        const passwordGroup = document.getElementById('edit_password_group');
+        const passwordNote = document.getElementById('password_permission_note');
+        editPasswordInput.value = '';
+
+        const canChangePassword = isSuperAdmin || (loggedInEmpId === employee_id);
+        if (canChangePassword) {
+            passwordGroup.style.display = 'block';
+            passwordNote.style.display = 'none';
+        } else {
+            passwordGroup.style.display = 'none';
+            passwordNote.style.display = 'block';
+        }
+
         editModal.style.display = 'flex';
     }
 
     // 2. Close popup
     function closeEditModal() {
         document.getElementById('edit_model').style.display = 'none';
+        document.getElementById('editEmployeeForm').reset();
     }
 
     // 3. Submit Update API
-    function submitEditEmployee(event) {
+    async function submitEditEmployee(event) {
         event.preventDefault(); // Prevents normal page refresh
 
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
         const employee_id = document.getElementById('employee_id').value;
         const username = document.getElementById('username').value;
         const role = document.getElementById('role').value;
+        const password = document.getElementById('edit_password')?.value.trim() || '';
 
-        fetch('/api/update_employee/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrf
-            },
-            body: JSON.stringify({
-                employee_id: employee_id,
-                username: username,
-                role: role
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-               
+        const payload = {
+            employee_id: employee_id,
+            username: username,
+            role: role
+        };
+        if (password) {
+            payload.password = password;
+        }
+
+        try {
+            const response = await fetch('/api/update_employee/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrf
+                },
+                body: JSON.stringify(payload)
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
                 closeEditModal();
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: data.message || 'Employee updated successfully',
+                    width: '350px',
+                    confirmButtonText: 'OK'
+                });
                 location.reload(); // Refresh table with updated data
             } else {
-                alert(data.message || 'Failed to update employee.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to update employee.',
+                    width: '350px',
+                    confirmButtonText: 'OK'
+                });
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Error:', error);
-            alert('Something went wrong!');
-        });
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Something went wrong!',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+        }
     }
 
     // 4. Delete Employee API
     function deleteEmployee(employee_id) {
-        if (!confirm(`Are you sure you want to delete employee ${employee_id}?`)) {
-            return;
-        }
+        Swal.fire({
+            icon: 'question',
+            title: `Are you sure you want to delete employee ${employee_id}?`,
+            width: '350px',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete it!',
+            cancelButtonText: 'Cancel'
+        }).then(async function(result) {
+            if (result.isConfirmed) {
+                const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
-        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
-
-        fetch('/api/delete_employee/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrf
-            },
-            body: JSON.stringify({
-                employee_id: employee_id
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                location.reload(); // Refresh table to remove deleted row
-            } else {
-                alert(data.message || 'Failed to delete employee.');
+                try {
+                    const response = await fetch('/api/delete_employee/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrf
+                        },
+                        body: JSON.stringify({
+                            employee_id: employee_id
+                        })
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.status === 'success') {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Success',
+                            text: data.message || 'Employee deleted successfully',
+                            width: '350px',
+                            confirmButtonText: 'OK'
+                        });
+                        location.reload(); // Refresh table to remove deleted row
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: data.message || 'Failed to delete employee.',
+                            width: '350px',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Something went wrong!',
+                        width: '350px',
+                        confirmButtonText: 'OK'
+                    });
+                }
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Something went wrong!');
         });
     }
 
@@ -208,7 +294,7 @@
     }
 
     // Submit Add Employee Form
-    function submitAddEmployee(event) {
+    async function submitAddEmployee(event) {
         event.preventDefault();
 
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
@@ -217,37 +303,68 @@
         const role = document.getElementById('add_role').value;
         const password = document.getElementById('password').value; // <-- 1. GET PASSWORD
 
-        fetch('/api/add_employee/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrf
-            },
-            body: JSON.stringify({
-                employee_id: employee_id,
-                username: username,
-                role: role,
-                password: password  // <-- 2. SEND PASSWORD
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
+        try {
+            const response = await fetch('/api/add_employee/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrf
+                },
+                body: JSON.stringify({
+                    employee_id: employee_id,
+                    username: username,
+                    role: role,
+                    password: password  // <-- 2. SEND PASSWORD
+                })
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
                 closeAddModal();
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: data.message || 'Employee added successfully!',
+                    width: '350px',
+                    confirmButtonText: 'OK'
+                });
                 location.reload();
             } else {
-                alert(data.message || 'Failed to add employee.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to add employee.',
+                    width: '350px',
+                    confirmButtonText: 'OK'
+                });
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Error:', error);
-            alert('Something went wrong!');
-        });
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Something went wrong!',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+        }
     }
 
 </script>
 
+{% if messages %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        {% for message in messages %}
+            Swal.fire({
+                icon: "{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}",
+                title: "{{ message.tags|capfirst }}",
+                text: "{{ message|escapejs }}",
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+        {% endfor %}
+    });
+</script>
+{% endif %}
 
-
-
-{% endblock%}
+{% endblock %}
