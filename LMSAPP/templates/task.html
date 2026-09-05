@@ -30,37 +30,40 @@
                     <th>S.No</th>
                     <th>Task Name</th>
                     <th>Project Name</th>
+                    <th>Employee Name</th>
                     <th>Due Date</th>
                     <th>Status</th>
                     <th style="text-align: center;">Actions</th>
-                    <th>Employee Name</th>
                 </tr>
             </thead>
             <tbody id="taskTableBody">
                 {% for task in tasks %}
-                <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}" data-due-date="{{ task.due_date }}" id="row-{{ task.id }}">
+                <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}" data-due-date="{{ task.due_date }}"
+                    data-employee="{{ task.employee_name }}" id="row-{{ task.id }}">
                     <td style="text-align: center;">
                         <input type="checkbox" class="row-checkbox" value="{{ task.id }}" onclick="updateBulk()">
                     </td>
                     <td>{{ task.s_no }}</td>
                     <td><strong>{{ task.task_name }}</strong></td>
                     <td><span class="badge badge-data-logger">{{ task.project_name }}</span></td>
+                    <td>{{ task.employee_name |default:"-" }}</td>
                     <td>{{ task.due_date|default:"-" }}</td>
                     <td>
                         <select class="status-select" onchange="changeStatus(this, {{ task.id }})">
-                            <option value="Not Worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
-                            <option value="In Progress" {% if task.status == "In Progress" %}selected{% endif %}>In Progress</option>
+                            <option value="Not Worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked </option>
+                            <option value="In Progress" {% if task.status == "In Progress" %}selected{% endif %}>InProgress</option>
                             <option value="Pending" {% if task.status == "Pending" %}selected{% endif %}>Pending</option>
-                            <option value="Completed" {% if task.status == "Completed" %}selected{% endif %}>Completed</option>
+                            <option value="Completed" {% if task.status == "Completed" %}selected{% endif %}>Completed
+                            </option>
                         </select>
                     </td>
                     <td style="text-align: center;">
                         <div class="action-btn-container">
-                            <button class="btn-action btn-action-edit" title="Edit Task" 
-                                onclick="openEdit({{ task.id }}, '{{ task.task_name|escapejs }}', '{{ task.project_name|escapejs }}', '{{ task.due_date }}', '{{ task.status|escapejs }}')">
+                            <button class="btn-action btn-action-edit" title="Edit Task"
+                                onclick="openEdit({{ task.id }}, '{{ task.task_name|escapejs }}', '{{ task.project_name|escapejs }}', '{{ task.due_date }}', '{{ task.status|escapejs }}','{{ task.employee_name|escapejs }}')">
                                 Edit
                             </button>
-                            <button class="btn-action btn-action-delete" title="Delete Task" 
+                            <button class="btn-action btn-action-delete" title="Delete Task"
                                 onclick="openDelete({{ task.id }}, '{{ task.task_name|escapejs }}')">
                                 Delete
                             </button>
@@ -69,7 +72,8 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="7" style="text-align: center; color: #64748b; padding: 25px;">No tasks found. Click "Add New Task" to create one.</td>
+                    <td colspan="7" style="text-align: center; color: #64748b; padding: 25px;">No tasks found. Click
+                        "Add New Task" to create one.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -98,8 +102,18 @@
                 </select>
             </div>
             <div class="form-group-modal">
+                <label for="new_employee_name">Employee Name<span class="required">*</span></label>
+                <select id="new_employee_name" required>
+                    <option value="" disabled selected>-- Select Employee --</option>
+                    {% for emp in employee %}
+                    <option value="{{ emp.username }}">{{ emp.username }}</option>
+                    {% empty %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group-modal">
                 <label for="new_due_date">Due Date<span class="required">*</span></label>
-                <input type="date" id="new_due_date"  required>
+                <input type="date" id="new_due_date" required>
             </div>
             <div class="form-group-modal">
                 <label for="new_status">Status</label>
@@ -139,7 +153,17 @@
                 </select>
             </div>
             <div class="form-group-modal">
-                <label for="edit_due_date">Due Date</label>
+                <label for="edit_employee_name">Employee Name<span class="required">*</span></label>
+                <select id="edit_employee_name" required>
+                    <option value="" disabled selected>-- Select Employee --</option>
+                    {% for emp in employee %}
+                    <option value="{{ emp.username }}">{{ emp.username }}</option>
+                    {% empty %}
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group-modal">
+                <label for="edit_due_date">Due Date<span class="required">*</span></label>
                 <input type="date" id="edit_due_date" required>
             </div>
             <div class="form-group-modal">
@@ -195,7 +219,7 @@
 </div>
 <script src="{% static 'sweetalert2/sweetalert2.min.js' %}"></script>
 <script>
-     
+
     let activeDeleteId = null;
 
     // 1. Select All Checkboxes
@@ -226,6 +250,7 @@
         const newStatus = selectElem.value;
         const taskName = row.querySelector('strong').textContent.trim();
         const projectName = row.dataset.project || '';
+        const employeeName = row.dataset.employee || '';
         const dueDate = row.dataset.dueDate || '';
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
@@ -237,6 +262,7 @@
                     id: taskId,
                     task_name: taskName,
                     project_name: projectName,
+                    employee_name: employeeName,
                     due_date: dueDate,
                     status: newStatus
                 })
@@ -246,7 +272,7 @@
         }
     }
 
-    
+
     function openAdd() {
         document.getElementById('addTaskModal').style.display = 'flex';
     }
@@ -261,6 +287,7 @@
         const addtask = {
             task_name: document.getElementById('new_task_name').value.trim(),
             project_name: document.getElementById('new_project_name').value,
+            employee_name: document.getElementById('new_employee_name').value,
             due_date: document.getElementById('new_due_date').value,
             status: document.getElementById('new_status').value
         }
@@ -276,36 +303,37 @@
             if (response.ok && data.status === 'success') {
                 closeAdd();
                 await Swal.fire({
-                    icon:'success',
-                    title:'Success',
-                    text:'Task Added Successfully',
-                    width:'350px',
-                    confirmButtonText:'Ok'
+                    icon: 'success',
+                    title: 'Success',
+                    text: 'Task Added Successfully',
+                    width: '350px',
+                    confirmButtonText: 'Ok'
                 })
                 window.location.reload();
             } else {
                 Swal.fire({
-                    icon:'error',
-                    title:'Error!',
-                    text:data.message || 'Failed to add task.',
-                    confirmButtonText:'OK'
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to add task.',
+                    confirmButtonText: 'OK'
                 })
             }
         } catch (err) {
             Swal.fire({
-                icon:'error',
-                title:'Error',
-                text:'Network error',
-                confirmButtonText:'OK'
+                icon: 'error',
+                title: 'Error',
+                text: 'Network error',
+                confirmButtonText: 'OK'
             })
         }
     }
 
-    
-    function openEdit(id, name, projectName, dueDate, status) {
+
+    function openEdit(id, name, projectName, dueDate, status, employeeName) {
         document.getElementById('edit_task_id').value = id;
         document.getElementById('edit_task_name').value = name || '';
         document.getElementById('edit_project_name').value = projectName || '';
+        document.getElementById('edit_employee_name').value = employeeName || '';
         document.getElementById('edit_due_date').value = dueDate || '';
         document.getElementById('edit_status').value = status || 'Not Worked';
         document.getElementById('editTaskModal').style.display = 'flex';
@@ -321,6 +349,7 @@
             id: document.getElementById('edit_task_id').value,
             task_name: document.getElementById('edit_task_name').value.trim(),
             project_name: document.getElementById('edit_project_name').value,
+            employee_name: document.getElementById('edit_employee_name').value,
             due_date: document.getElementById('edit_due_date').value,
             status: document.getElementById('edit_status').value
         };
@@ -336,12 +365,13 @@
             if (response.ok && data.status === 'success') {
                 closeEdit();
                 Swal.fire({
-                    icon:'success',
-                    title:'success',
-                    text:'Task Updated Successfully',
-                    width:'350px',
-                    confirmButtonText:'OK'
+                    icon: 'success',
+                    title: 'success',
+                    text: 'Task Updated Successfully',
+                    width: '350px',
+                    confirmButtonText: 'OK'
                 })
+                window.location.reload();
                 // showSuccess(`Task "${tasks.task_name}" updated successfully!`);
             } else {
                 alert(data.message || 'Failed to update task.');
@@ -361,7 +391,7 @@
             showCancelButton: true,
             confirmButtonText: 'Yes, Delete it!',
             cancelButtonText: 'Cancel'
-        }).then(function(result) {
+        }).then(function (result) {
             if (result.isConfirmed) {
                 deleteTask();
             }

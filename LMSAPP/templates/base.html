@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}LOGNOTE{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="icon" type="favicon/png" href="{% static 'favicon/LMS ICON.png' %}">
 </head>
 
 <body>
@@ -14,7 +15,8 @@
     <!-- Sidebar Navigation -->
     <div class="sidebar">
         <div class="sidebar-brand">
-            LOGNOTE
+            <img src="{% static 'images/LMS ICON.png' %}" alt="LOGNOTE Icon" class="brand-icon">
+            <span>LOGNOTE</span>
         </div>
 
         <ul class="sidebar-menu">

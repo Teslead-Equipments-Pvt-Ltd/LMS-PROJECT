@@ -449,11 +449,11 @@
             const response = await fetch('/api/projects/bulk-delete/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                body: JSON.stringify({ ids: ids })
+                body: JSON.stringify({ count: count })
             });
             const data = await response.json();
             if (response.ok && data.status === 'success') {
-                closeBulkDeleteModal();
+                // closeBulkDeleteModal();
                 await Swal.fire({
                     icon: 'success',
                     title: 'Success',

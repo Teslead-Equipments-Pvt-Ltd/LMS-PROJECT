@@ -23,14 +23,24 @@ body {
 }
 
 .sidebar-brand {
-    padding: 22px 24px;
-    text-align: left;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
     font-size: 20px;
     font-weight: 800;
     background-color: #0b112b;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     letter-spacing: 1px;
     color: #ffffff;
+}
+
+.brand-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    flex-shrink: 0;
 }
 
 .sidebar-menu {
