@@ -1,5 +1,7 @@
 from django.db import connection
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password  # <-- ADD THIS IMPORT
+from LMSAPP.services.task_service import tasks_table
+
 def get_all_employees():
     with connection.cursor() as cursor:
         cursor.execute("""
@@ -21,29 +23,16 @@ def get_all_employees():
 
 
 # 1. EDIT / UPDATE Employee Service
-def update_employee_service(employee_id, username, role, password=None, is_super_admin=False):
-  
+def update_employee_service(employee_id, username, role):
+    """
+    Updates the username and role for an employee in the 'users' table.
+    """
     with connection.cursor() as cursor:
-        # Non-superadmin cannot change roles
-        if not is_super_admin:
-            cursor.execute("SELECT role FROM users WHERE employee_id = %s", [employee_id])
-            row = cursor.fetchone()
-            if row:
-                role = row[0]
-
-        if password:
-            hashed_pwd = make_password(password)
-            cursor.execute("""
-                UPDATE users
-                SET username = %s, role = %s, password = %s
-                WHERE employee_id = %s
-            """, [username, role, hashed_pwd, employee_id])
-        else:
-            cursor.execute("""
-                UPDATE users
-                SET username = %s, role = %s
-                WHERE employee_id = %s
-            """, [username, role, employee_id])
+        cursor.execute("""
+            UPDATE users
+            SET username = %s, role = %s
+            WHERE employee_id = %s
+        """, [username, role, employee_id])
     return True
 
 
@@ -62,15 +51,33 @@ def delete_employee_service(employee_id):
 
 # 3. ADD Employee Service
 def add_employee_service(employee_id, username, role, password):
+    """
+    Inserts a new employee record into the 'users' table.
+    """
     hashed_pwd = make_password(password)
     with connection.cursor() as cursor:
-        cursor.execute("SELECT id FROM users WHERE employee_id = %s", [employee_id])
-        if cursor.fetchone():
-            raise ValueError(f"Employee ID '{employee_id}' already exists.")
-
         cursor.execute("""
             INSERT INTO users (employee_id, username, role, password)
             VALUES (%s, %s, %s, %s)
         """, [employee_id, username, role, hashed_pwd])
     return True
 
+def get_employee_tasks(username):
+    tasks_table()
+    with connection.cursor() as cursor:
+        cursor.execute(" SELECT id ,task_name,project_name,due_date,status,employee_name FROM tasks WHERE employee_name=%s ORDER BY id ASC",[username])
+        rows=cursor.fetchall()
+
+        tasks=[]
+        for index,row in enumerate(rows,start=1):
+            print(index,row)
+            tasks.append({
+                's_no':index,
+                'id':row[0],
+                'task_name':row[1],
+                'project_name':row[2],
+                'due_date':row[3],
+                'status':row[4],
+                'employee_name':row[5]
+            })
+    return tasks

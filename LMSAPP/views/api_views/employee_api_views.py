@@ -1,6 +1,6 @@
 import json
 from django.http import JsonResponse
-from LMSAPP.services.employee_service import update_employee_service, delete_employee_service,add_employee_service
+from LMSAPP.services.employee_service import update_employee_service, delete_employee_service,add_employee_service,get_employee_tasks
 
 def update_employee_api(request):
     if request.method != 'POST':
@@ -72,4 +72,20 @@ def add_employee_api(request):
         return JsonResponse({'status': 'error', 'message': str(ve)}, status=400)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': 'Failed to add employee.'}, status=500)
+
+def employee_tasks_api(request):
+    user_name = request.session.get('user_name') or request.session.get('username')
+
+    if not user_name:
+        return JsonResponse({
+            'success': False,
+            'message': 'User not logged in'
+        }, status=401)
+
+    tasks = get_employee_tasks(user_name)
+
+    return JsonResponse({
+        'success': True,
+        'tasks': tasks
+    })
 

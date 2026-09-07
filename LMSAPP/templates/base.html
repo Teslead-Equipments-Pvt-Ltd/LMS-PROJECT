@@ -22,6 +22,10 @@
         </div>
 
         <ul class="sidebar-menu">
+
+        {% if request.session.user_type == 'Employee' or request.session.role == 'EMPLOYEE' %}
+            <li><a href="{% url 'task_page' %}">Task</a></li>
+        {% else %}
             <li><a href="{% url 'dashboard_page' %}">Dashboard</a></li>
             <li><a href=" ">Notifications</a></li>
             <li><a href="{% url 'task_page' %}">Task</a></li>
@@ -29,6 +33,7 @@
             <li><a href=" ">Assigned Tasks</a></li>
             <li><a href=" ">Task Request</a></li>
             <li><a href="{% url 'employee_page' %} ">Employees</a></li>
+        {% endif %}
         </ul>
     </div>
 
