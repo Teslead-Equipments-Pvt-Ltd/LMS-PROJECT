@@ -26,11 +26,12 @@ def add_task_api(request):
         project_name = body.get('project_name', '').strip()
         due_date = body.get('due_date', '').strip()
         status = body.get('status', 'Not Worked').strip()
+        employee_name=body.get('employee_name','').strip()
 
         if not task_name or not project_name:
             return JsonResponse({'status': 'error', 'message': 'Task Name and Project Name are required.'}, status=400)
 
-        add_task_service(task_name, project_name, due_date, status)
+        add_task_service(task_name, project_name, due_date, status,employee_name)
         return JsonResponse({'status': 'success', 'message': 'Task created successfully.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -46,11 +47,12 @@ def update_task_api(request):
         project_name = body.get('project_name', '').strip()
         due_date = body.get('due_date', '').strip()
         status = body.get('status', 'Not Worked').strip()
+        employee_name=body.get('employee_name','').strip()
 
         if not task_id:
             return JsonResponse({'status': 'error', 'message': 'Task ID is required.'}, status=400)
 
-        update_task_service(task_id, task_name, project_name, due_date, status)
+        update_task_service(task_id, task_name, project_name, due_date, status,employee_name)
         return JsonResponse({'status': 'success', 'message': 'Task updated successfully.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

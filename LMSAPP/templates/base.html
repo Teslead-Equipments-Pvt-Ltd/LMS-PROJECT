@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'sweetalert2/sweetalert2.min.css' %}">
     <script src="{% static 'sweetalert2/sweetalert2.min.js' %}"></script>
+    <link rel="icon" type="favicon/png" href="{% static 'favicon/LMS ICON.png' %}">
 </head>
 
 <body>
@@ -16,10 +17,15 @@
     <!-- Sidebar Navigation -->
     <div class="sidebar">
         <div class="sidebar-brand">
-            LOGNOTE
+            <img src="{% static 'images/LMS ICON.png' %}" alt="LOGNOTE Icon" class="brand-icon">
+            <span>LOGNOTE</span>
         </div>
 
         <ul class="sidebar-menu">
+
+        {% if request.session.user_type == 'Employee' or request.session.role == 'EMPLOYEE' %}
+            <li><a href="{% url 'task_page' %}">Task</a></li>
+        {% else %}
             <li><a href="{% url 'dashboard_page' %}">Dashboard</a></li>
             <li><a href=" ">Notifications</a></li>
             <li><a href="{% url 'task_page' %}">Task</a></li>
@@ -27,6 +33,7 @@
             <li><a href=" ">Assigned Tasks</a></li>
             <li><a href=" ">Task Request</a></li>
             <li><a href="{% url 'employee_page' %} ">Employees</a></li>
+        {% endif %}
         </ul>
     </div>
 

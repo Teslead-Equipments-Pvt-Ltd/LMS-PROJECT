@@ -14,7 +14,7 @@ def login_api(request):
                 'status': 'error',
                 'message': 'Invalid JSON format in request.'
             }, status=400)
-        # print("------------------------------",request.body)
+        print("------------------------------",request.body)
 
         # 2. Extract and sanitize credentials
         username = str(body.get('username', '')).strip()
@@ -52,7 +52,7 @@ def login_api(request):
         return JsonResponse({
             'status': 'success',
             'message': 'Login successful',
-            'redirect_url': '/dashboard/',
+            'redirect_url': '/task/',
             'user_name': user.get('user_name'),
             'user_type': user.get('user_type')
         }, status=200)

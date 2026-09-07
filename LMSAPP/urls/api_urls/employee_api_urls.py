@@ -2,7 +2,7 @@ from django.urls import path
 from LMSAPP.views.api_views.employee_api_views import (
     add_employee_api,
     update_employee_api,
-    delete_employee_api
+    delete_employee_api,
 )
 
 urlpatterns = [

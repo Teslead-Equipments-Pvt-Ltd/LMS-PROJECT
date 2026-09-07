@@ -10,16 +10,22 @@ def tasks_table():
                 project_name VARCHAR(200) NOT NULL,
                 due_date VARCHAR(50) DEFAULT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'Not Worked',
+                employee_name VARCHAR(200) DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
+        try:
+            cursor.execute("ALTER TABLE tasks ADD COLUMN employee_name VARCHAR(200) DEFAULT NULL;")
+        except Exception:
+            pass
+
 
 def get_all_tasks_service():
     
     tasks_table()
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, task_name, project_name, due_date, status
+            SELECT id, task_name, project_name, due_date, status,employee_name
             FROM tasks ORDER BY id ASC
         """)
         rows = cursor.fetchall()
@@ -33,28 +39,29 @@ def get_all_tasks_service():
             'project_name': row[2],
             'due_date': row[3],
             'status': row[4],
+            'employee_name':row[5],
         })
     return tasks
 
-def add_task_service(task_name, project_name, due_date, status):
+def add_task_service(task_name, project_name, due_date, status,employee_name):
 
     
     with connection.cursor() as cursor:
         cursor.execute("""
-            INSERT INTO tasks (task_name, project_name, due_date, status)
-            VALUES (%s, %s, %s, %s)
-        """, [task_name, project_name, due_date , status ])
+            INSERT INTO tasks (task_name, project_name, due_date, status,employee_name)
+            VALUES (%s, %s, %s, %s,%s)
+        """, [task_name, project_name, due_date , status ,employee_name])
     return True
 
-def update_task_service(task_id, task_name, project_name, due_date, status):
+def update_task_service(task_id, task_name, project_name, due_date, status,employee_name):
     
    
     with connection.cursor() as cursor:
         cursor.execute("""
             UPDATE tasks
-            SET task_name = %s, project_name = %s, due_date = %s, status = %s
+            SET task_name = %s, project_name = %s, due_date = %s, status = %s,employee_name=%s
             WHERE id = %s
-        """, [task_name, project_name, due_date, status, task_id])
+        """, [task_name, project_name, due_date, status,employee_name, task_id])
     return True
 
 def delete_task_service(task_id):
