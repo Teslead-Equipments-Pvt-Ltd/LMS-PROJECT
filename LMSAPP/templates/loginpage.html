@@ -23,7 +23,7 @@
             </div>
 
             <!-- Login Form -->
-            <form id="loginForm" autocomplete="off">
+            <form id="loginForm" autocomplete="off" onsubmit="submitLogin(event)">
                 {% csrf_token %}
 
                 <div class="form-group">
@@ -65,8 +65,8 @@
             if (p) p.value = '';
         });
 
-        document.getElementById('loginForm').addEventListener('submit', async function (e) {
-            e.preventDefault();
+        async function submitLogin(event) {
+            event.preventDefault();
 
             const usernameInput = document.getElementById('username');
             const passwordInput = document.getElementById('password');
@@ -127,7 +127,7 @@
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Login';
             }
-        });
+        }
     </script>
 
 </body>
