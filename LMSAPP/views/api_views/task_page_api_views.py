@@ -27,7 +27,6 @@ def add_task_api(request):
         due_date = body.get('due_date', '').strip()
         status = body.get('status', 'Not Worked').strip()
         employee_name=body.get('employee_name','').strip()
-
         if not task_name or not project_name:
             return JsonResponse({'status': 'error', 'message': 'Task Name and Project Name are required.'}, status=400)
 
@@ -48,7 +47,7 @@ def update_task_api(request):
         due_date = body.get('due_date', '').strip()
         status = body.get('status', 'Not Worked').strip()
         employee_name=body.get('employee_name','').strip()
-
+       
         if not task_id:
             return JsonResponse({'status': 'error', 'message': 'Task ID is required.'}, status=400)
 

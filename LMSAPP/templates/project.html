@@ -55,7 +55,7 @@
                         <select class="status-select" onchange="handleInlineStatusChange(this, {{ project.id }})">
                             <option value="Not Worked" {% if project.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
                             <option value="In Progress" {% if project.status == "In Progress" %}selected{% endif %}>In Progress</option>
-                            <option value="Pending" {% if project.status == "Pending" %}selected{% endif %}>Pending</option>
+                            <option value="On Hold" {% if project.status == "On Hold" %}selected{% endif %}>On Hold</option>
                             <option value="Completed" {% if project.status == "Completed" %}selected{% endif %}>Completed</option>
                         </select>
                     </td>
@@ -108,7 +108,7 @@
                 <select id="new_status" required>
                     <option value="Not Worked">Not Worked</option>
                     <option value="In Progress">In Progress</option>
-                    <option value="Pending">Pending</option>
+                    <option value="On Hold">On Hold</option>
                     <option value="Completed">Completed</option>
                 </select>
             </div>
@@ -147,7 +147,7 @@
                 <select id="edit_status" required onchange="handleEditModalStatusChange()">
                     <option value="Not Worked">Not Worked</option>
                     <option value="In Progress">In Progress</option>
-                    <option value="Pending">Pending</option>
+                    <option value="On Hold">On Hold</option>
                     <option value="Completed">Completed</option>
                 </select>
             </div>

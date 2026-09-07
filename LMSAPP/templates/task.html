@@ -14,7 +14,7 @@
             <button class="btn-bulk-delete" id="bulkDeleteBtn" onclick="openBulkDelete()">
                 Bulk Delete <span id="selectedCount">(0)</span>
             </button>
-            
+
             {% if request.session.user_type|lower == "superadmin" or request.session.user_type|lower == "admin" %}
             <button class="btn-add-task" onclick="openAdd()">
                 + Add New Task
@@ -53,15 +53,15 @@
                     <td>{{ task.due_date|default:"-" }}</td>
                     <td>
                         <select class="status-select" onchange="changeStatus(this, {{ task.id }})">
-                            <option value="Not Worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked </option>
+                            <option value="Not Worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
                             <option value="In Progress" {% if task.status == "In Progress" %}selected{% endif %}>InProgress</option>
-                            <option value="Pending" {% if task.status == "Pending" %}selected{% endif %}>Pending</option>
-                            <option value="Completed" {% if task.status == "Completed" %}selected{% endif %}>Completed
-                            </option>
+                            <option value="On Hold" {% if task.status == "On Hold" %}selected{% endif %}>On Hold</option>
+                            <option value="Completed" {% if task.status == "Completed" %}selected{% endif %}>Completed</option>
                         </select>
                     </td>
                     <td style="text-align: center;">
                         <div class="action-btn-container">
+                            {% if request.session.user_type|lower == "superadmin" or request.session.user_type|lower == "admin" %}
                             <button class="btn-action btn-action-edit" title="Edit Task"
                                 onclick="openEdit({{ task.id }}, '{{ task.task_name|escapejs }}', '{{ task.project_name|escapejs }}', '{{ task.due_date }}', '{{ task.status|escapejs }}','{{ task.employee_name|escapejs }}')">
                                 Edit
@@ -70,6 +70,9 @@
                                 onclick="openDelete({{ task.id }}, '{{ task.task_name|escapejs }}')">
                                 Delete
                             </button>
+                            {% else %}
+                            <span style="color: #94a3b8; font-size: 13px;">-</span>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -105,14 +108,18 @@
                 </select>
             </div>
             <div class="form-group-modal">
-                <label for="new_employee_name">Employee Name<span class="required">*</span></label>
-                <select id="new_employee_name" required>
-                    <option value="" disabled selected>-- Select Employee --</option>
+                <label>Assign To Employees (Select Multiple)<span class="required">*</span></label>
+                <div class="employee-checkbox-list">
                     {% for emp in employee %}
-                    <option value="{{ emp.username }}">{{ emp.username }}</option>
+                    <div class="employee-checkbox-item">
+                        <input type="checkbox" class="add-emp-checkbox" id="add_emp_{{ forloop.counter }}"
+                            value="{{ emp.username }}">
+                        <label for="add_emp_{{ forloop.counter }}">{{ emp.username }}</label>
+                    </div>
                     {% empty %}
+                    <div style="color: #94a3b8; font-size: 13px;">No employees found</div>
                     {% endfor %}
-                </select>
+                </div>
             </div>
             <div class="form-group-modal">
                 <label for="new_due_date">Due Date<span class="required">*</span></label>
@@ -123,7 +130,7 @@
                 <select id="new_status" required>
                     <option value="Not Worked">Not Worked</option>
                     <option value="In Progress">In Progress</option>
-                    <option value="Pending">Pending</option>
+                    <option value="On Hold">On Hold</option>
                     <option value="Completed">Completed</option>
                 </select>
             </div>
@@ -156,14 +163,18 @@
                 </select>
             </div>
             <div class="form-group-modal">
-                <label for="edit_employee_name">Employee Name<span class="required">*</span></label>
-                <select id="edit_employee_name" required>
-                    <option value="" disabled selected>-- Select Employee --</option>
+                <label>Assign To Employees<span class="required">*</span></label>
+                <div class="employee-checkbox-list">
                     {% for emp in employee %}
-                    <option value="{{ emp.username }}">{{ emp.username }}</option>
+                    <div class="employee-checkbox-item">
+                        <input type="checkbox" class="edit-emp-checkbox" id="edit_emp_{{ forloop.counter }}"
+                            value="{{ emp.username }}">
+                        <label for="edit_emp_{{ forloop.counter }}">{{ emp.username }}</label>
+                    </div>
                     {% empty %}
+                    <div style="color: #94a3b8; font-size: 13px;">No employees found</div>
                     {% endfor %}
-                </select>
+                </div>
             </div>
             <div class="form-group-modal">
                 <label for="edit_due_date">Due Date<span class="required">*</span></label>
@@ -174,7 +185,7 @@
                 <select id="edit_status" required>
                     <option value="Not Worked">Not Worked</option>
                     <option value="In Progress">In Progress</option>
-                    <option value="Pending">Pending</option>
+                    <option value="On Hold">On Hold</option>
                     <option value="Completed">Completed</option>
                 </select>
             </div>
@@ -213,7 +224,7 @@
 <!-- Modal: Edit Success Confirmation -->
 <div class="modal-overlay" id="editSuccessModal">
     <div class="modal-content">
-        <h3 style="color: #16a34a;">Task Saved</h3>
+        <h3 style="color: #17b952;">Task Saved</h3>
         <p id="editSuccessText">Updated successfully.</p>
         <div class="modal-actions">
             <button type="button" class="btn-modal-confirm" onclick="closeSuccess()">OK</button>
@@ -283,17 +294,30 @@
     function closeAdd() {
         document.getElementById('addTaskModal').style.display = 'none';
         document.getElementById('addTaskForm').reset();
+        document.querySelectorAll('.add-emp-checkbox').forEach(cb => cb.checked = false);
     }
 
     async function saveTask(event) {
         event.preventDefault();
+        const selectedEmps = Array.from(document.querySelectorAll('.add-emp-checkbox:checked')).map(cb => cb.value);
+        if (selectedEmps.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please select at least one employee.',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
         const addtask = {
             task_name: document.getElementById('new_task_name').value.trim(),
             project_name: document.getElementById('new_project_name').value,
-            employee_name: document.getElementById('new_employee_name').value,
+            employee_name: selectedEmps.join(', '),
             due_date: document.getElementById('new_due_date').value,
             status: document.getElementById('new_status').value
-        }
+        };
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
         try {
@@ -311,7 +335,7 @@
                     text: 'Task Added Successfully',
                     width: '350px',
                     confirmButtonText: 'Ok'
-                })
+                });
                 window.location.reload();
             } else {
                 Swal.fire({
@@ -319,7 +343,7 @@
                     title: 'Error!',
                     text: data.message || 'Failed to add task.',
                     confirmButtonText: 'OK'
-                })
+                });
             }
         } catch (err) {
             Swal.fire({
@@ -327,7 +351,7 @@
                 title: 'Error',
                 text: 'Network error',
                 confirmButtonText: 'OK'
-            })
+            });
         }
     }
 
@@ -336,23 +360,41 @@
         document.getElementById('edit_task_id').value = id;
         document.getElementById('edit_task_name').value = name || '';
         document.getElementById('edit_project_name').value = projectName || '';
-        document.getElementById('edit_employee_name').value = employeeName || '';
         document.getElementById('edit_due_date').value = dueDate || '';
         document.getElementById('edit_status').value = status || 'Not Worked';
+
+        const assignedEmps = (employeeName || '').split(',').map(e => e.trim());
+        document.querySelectorAll('.edit-emp-checkbox').forEach(cb => {
+            cb.checked = assignedEmps.includes(cb.value.trim());
+        });
+
         document.getElementById('editTaskModal').style.display = 'flex';
     }
 
     function closeEdit() {
         document.getElementById('editTaskModal').style.display = 'none';
+        document.querySelectorAll('.edit-emp-checkbox').forEach(cb => cb.checked = false);
     }
 
     async function updateTask(event) {
         event.preventDefault();
+        const selectedEmps = Array.from(document.querySelectorAll('.edit-emp-checkbox:checked')).map(cb => cb.value);
+        if (selectedEmps.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please select at least one employee.',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
         const tasks = {
             id: document.getElementById('edit_task_id').value,
             task_name: document.getElementById('edit_task_name').value.trim(),
             project_name: document.getElementById('edit_project_name').value,
-            employee_name: document.getElementById('edit_employee_name').value,
+            employee_name: selectedEmps.join(', '),
             due_date: document.getElementById('edit_due_date').value,
             status: document.getElementById('edit_status').value
         };
@@ -367,20 +409,31 @@
             const data = await response.json();
             if (response.ok && data.status === 'success') {
                 closeEdit();
-                Swal.fire({
+                await Swal.fire({
                     icon: 'success',
-                    title: 'success',
+                    title: 'Success',
                     text: 'Task Updated Successfully',
                     width: '350px',
                     confirmButtonText: 'OK'
-                })
+                });
                 window.location.reload();
-                // showSuccess(`Task "${tasks.task_name}" updated successfully!`);
             } else {
-                alert(data.message || 'Failed to update task.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to update task.',
+                    width: '350px',
+                    confirmButtonText: 'OK'
+                });
             }
         } catch (err) {
-            alert('Network error while updating task.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Network error while updating task.',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
         }
     }
 
@@ -513,6 +566,6 @@
     //     window.location.reload();
     // }
 
-    
+
 </script>
 {% endblock %}

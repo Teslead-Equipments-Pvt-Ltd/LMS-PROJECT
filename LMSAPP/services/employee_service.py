@@ -64,20 +64,25 @@ def add_employee_service(employee_id, username, role, password):
 
 def get_employee_tasks(username):
     tasks_table()
+    like_pattern = f"%{username}%"
     with connection.cursor() as cursor:
-        cursor.execute(" SELECT id ,task_name,project_name,due_date,status,employee_name FROM tasks WHERE employee_name=%s ORDER BY id ASC",[username])
-        rows=cursor.fetchall()
+        cursor.execute("""
+            SELECT id, task_name, project_name, due_date, status, employee_name 
+            FROM tasks 
+            WHERE FIND_IN_SET(%s, REPLACE(employee_name, ', ', ',')) OR employee_name LIKE %s 
+            ORDER BY id ASC
+        """, [username, like_pattern])
+        rows = cursor.fetchall()
 
-        tasks=[]
-        for index,row in enumerate(rows,start=1):
-            print(index,row)
+        tasks = []
+        for index, row in enumerate(rows, start=1):
             tasks.append({
-                's_no':index,
-                'id':row[0],
-                'task_name':row[1],
-                'project_name':row[2],
-                'due_date':row[3],
-                'status':row[4],
-                'employee_name':row[5]
+                's_no': index,
+                'id': row[0],
+                'task_name': row[1],
+                'project_name': row[2],
+                'due_date': row[3],
+                'status': row[4],
+                'employee_name': row[5]
             })
     return tasks

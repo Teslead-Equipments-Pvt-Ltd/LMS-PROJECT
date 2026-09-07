@@ -110,7 +110,7 @@
     color: #1d4ed8;
 }
 
-.status-pill.pending {
+.status-pill.onhold {
     background-color: #fef3c7;
     color: #b45309;
 }
@@ -191,7 +191,7 @@
     color: #1d4ed8;
 }
 
-.badge-pending {
+.badge-onhold {
     background-color: #fef3c7;
     color: #b45309;
 }
