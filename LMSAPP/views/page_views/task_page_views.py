@@ -15,7 +15,6 @@ def task_page(request):
         tasks=get_all_tasks_service()
 
     employee=get_all_employees()
-    print(employee)
     # tasks = get_all_tasks_service()
     projects = get_all_projects_service()
     return render(request, "task.html", {"tasks": tasks, "projects": projects,"employee":employee})
