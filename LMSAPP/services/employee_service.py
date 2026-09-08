@@ -1,5 +1,5 @@
 from django.db import connection
-from django.contrib.auth.hashers import make_password  # <-- ADD THIS IMPORT
+from django.contrib.auth.hashers import make_password  
 from LMSAPP.services.task_service import tasks_table
 
 def get_all_employees():
@@ -22,8 +22,8 @@ def get_all_employees():
     return employees_list
 
 
-# 1. EDIT / UPDATE Employee Service
-def update_employee_service(employee_id, username, role,password=None):
+
+def update_employee_service(employee_id, username, role):
     """
     Updates the username and role for an employee in the 'users' table.
     """
@@ -44,7 +44,7 @@ def update_employee_service(employee_id, username, role,password=None):
     return True
 
 
-# 2. DELETE Employee Service
+
 def delete_employee_service(employee_id):
     """
     Permanently removes an employee from the 'users' table using their employee_id.
@@ -57,7 +57,6 @@ def delete_employee_service(employee_id):
     return True
 
 
-# 3. ADD Employee Service
 def add_employee_service(employee_id, username, role, password):
     """
     Inserts a new employee record into the 'users' table.
@@ -72,20 +71,26 @@ def add_employee_service(employee_id, username, role, password):
 
 def get_employee_tasks(username):
     tasks_table()
+    like_pattern = f"%{username}%"
     with connection.cursor() as cursor:
-        cursor.execute(" SELECT id ,task_name,project_name,due_date,status,employee_name FROM tasks WHERE employee_name=%s ORDER BY id ASC",[username])
-        rows=cursor.fetchall()
+        cursor.execute("""
+            SELECT id, task_name, project_name, created_date, due_date, status, employee_name 
+            FROM tasks 
+            WHERE FIND_IN_SET(%s, REPLACE(employee_name, ', ', ',')) OR employee_name LIKE %s 
+            ORDER BY id ASC
+        """, [username, like_pattern])
+        rows = cursor.fetchall()
 
-        tasks=[]
-        for index,row in enumerate(rows,start=1):
-            print(index,row)
+        tasks = []
+        for index, row in enumerate(rows, start=1):
             tasks.append({
-                's_no':index,
-                'id':row[0],
-                'task_name':row[1],
-                'project_name':row[2],
-                'due_date':row[3],
-                'status':row[4],
-                'employee_name':row[5]
+                's_no': index,
+                'id': row[0],
+                'task_name': row[1],
+                'project_name': row[2],
+                'created_date': row[3],
+                'due_date': row[4],
+                'status': row[5],
+                'employee_name': row[6]
             })
     return tasks

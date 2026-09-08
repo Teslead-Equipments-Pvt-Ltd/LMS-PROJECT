@@ -6,16 +6,80 @@
     flex-wrap: wrap;
     gap: 15px;
 }
+
 .task-header h2 {
     font-size: 22px;
     color: #141517;
     font-weight: 700;
 }
+
 .header-actions {
     display: flex;
     align-items: center;
     gap: 10px;
 }
+
+/* Frontend Filter Bar Styling */
+.task-filters {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    background-color: #f8fafc;
+    padding: 14px 18px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+}
+
+.filter-input,
+.filter-select {
+    padding: 7px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #1e293b;
+    outline: none;
+    transition: all 0.2s ease;
+    background-color: #ffffff;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+    border-color: #280ad3;
+    box-shadow: 0 0 0 2px rgba(40, 10, 211, 0.15);
+}
+
+.btn-clear-filter {
+    background-color: #e2e8f0;
+    color: #475569;
+    border: none;
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-clear-filter:hover {
+    background-color: #cbd5e1;
+    color: #0f172a;
+}
+
 .btn-add-task {
     background-color: #280ad3;
     color: #ffffff;
@@ -27,9 +91,11 @@
     cursor: pointer;
     transition: background 0.2s;
 }
+
 .btn-add-task:hover {
     background-color: #1e293b;
 }
+
 .btn-bulk-delete {
     background-color: #ef4444;
     color: #ffffff;
@@ -39,12 +105,15 @@
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    display: none; /* Displayed only when checkboxes are selected */
+    display: none;
+    /* Displayed only when checkboxes are selected */
     transition: background 0.2s;
 }
+
 .btn-bulk-delete:hover {
     background-color: #dc2626;
 }
+
 .table-container {
     width: 100%;
     overflow-x: auto;
@@ -52,12 +121,14 @@
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
+
 .task-table {
     width: 100%;
     border-collapse: collapse;
     text-align: left;
     font-size: 14px;
 }
+
 .task-table th {
     background-color: #364056;
     color: #ffffff;
@@ -66,11 +137,13 @@
     border-bottom: 2px solid #e2e8f0;
     white-space: nowrap;
 }
+
 .task-table td {
     padding: 12px 14px;
     border-bottom: 1px solid #e2e8f0;
     vertical-align: middle;
 }
+
 .task-table tr:hover {
     background-color: #f8fafc;
 }
@@ -83,24 +156,76 @@
     font-size: 12px;
     font-weight: 600;
 }
-.status-not-worked { background-color: #f1f5f9; color: #475569; }
-.status-in-progress { background-color: #fef9c3; color: #854d0e; }
-.status-pending { background-color: #ffedd5; color: #c2410c; }
-.status-completed { background-color: #dcfce7; color: #15803d; }
+
+.badge-project,
+.badge-data-logger {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.status-not-worked {
+    background-color: #f3f4f6 !important;
+    color: #4b5563 !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+.status-in-progress {
+    background-color: #fee2e2 !important;
+    color: #7f1d1d !important;
+    border: 1px solid #fca5a5 !important;
+}
+
+.status-onhold {
+    background-color: #ffedd5 !important;
+    color: #78350f !important;
+    border: 1px solid #fed7aa !important;
+}
+
+.status-completed {
+    background-color: #dcfce7 !important;
+    color: #14532d !important;
+    border: 1px solid #86efac !important;
+}
 
 .status-select {
     padding: 6px 10px;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.status-select option {
     font-weight: 600;
     background-color: #ffffff;
-    color: #334155;
-    cursor: pointer;
 }
+
+.status-select option.opt-not-worked,
+.status-select option[value="Not Worked"] {
+    color: #4b5563;
+}
+
+.status-select option.opt-in-progress,
+.status-select option[value="In Progress"] {
+    color: #7f1d1d;
+}
+
+.status-select option.opt-onhold,
+.status-select option[value="On Hold"] {
+    color: #78350f;
+}
+
+.status-select option.opt-completed,
+.status-select option[value="Completed"] {
+    color: #14532d;
+}
+
 .status-select:focus {
     outline: none;
-    border-color: #280ad3;
+    box-shadow: 0 0 0 2px rgba(40, 10, 211, 0.2);
 }
 
 /* Text Action Buttons */
@@ -110,6 +235,7 @@
     gap: 8px;
     justify-content: center;
 }
+
 .btn-action {
     border: none;
     padding: 6px 12px;
@@ -119,22 +245,27 @@
     cursor: pointer;
     transition: background 0.2s;
 }
+
 .btn-action-edit {
     background-color: #e0f2fe;
     color: #14772b;
 }
+
 .btn-action-edit:hover {
     background-color: #bae6fd;
 }
+
 .btn-action-delete {
     background-color: #fee2e2;
     color: #ef4444;
 }
+
 .btn-action-delete:hover {
     background-color: #fca5a5;
 }
 
-.row-checkbox, #selectAll {
+.row-checkbox,
+#selectAll {
     width: 16px;
     height: 16px;
     cursor: pointer;
@@ -154,6 +285,7 @@
     align-items: center;
     z-index: 1000;
 }
+
 .modal-content {
     background: #ffffff;
     padding: 24px;
@@ -162,20 +294,24 @@
     max-width: 92%;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
 }
+
 .modal-content h3 {
     margin-bottom: 16px;
     font-size: 18px;
     color: #0f172a;
     font-weight: 700;
 }
+
 .modal-content p {
     font-size: 14px;
     color: #475569;
     margin-bottom: 20px;
 }
+
 .form-group-modal {
     margin-bottom: 14px;
 }
+
 .form-group-modal label {
     display: block;
     font-size: 13px;
@@ -183,19 +319,23 @@
     color: #334155;
     margin-bottom: 6px;
 }
-.form-group-modal input, .form-group-modal select {
+
+.form-group-modal input,
+.form-group-modal select {
     width: 100%;
     padding: 9px 12px;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
     font-size: 14px;
 }
+
 .modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
     margin-top: 20px;
 }
+
 .btn-modal-cancel {
     background-color: #94a3b8;
     color: white;
@@ -206,6 +346,7 @@
     font-weight: 600;
     cursor: pointer;
 }
+
 .btn-modal-delete {
     background-color: #ef4444;
     color: white;
@@ -216,6 +357,7 @@
     font-weight: 600;
     cursor: pointer;
 }
+
 .btn-modal-confirm {
     background-color: #280ad3;
     color: white;
@@ -226,7 +368,139 @@
     font-weight: 600;
     cursor: pointer;
 }
-.required
-{
+
+.required {
     color: red;
+}
+
+/* Employee Checkbox List in Modals */
+.employee-checkbox-list {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 10px 12px;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.employee-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.employee-checkbox-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #280ad3;
+}
+
+.employee-checkbox-item label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    cursor: pointer;
+    margin: 0;
+}
+
+/* Project Name Search Dropdown */
+.project-search-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.project-input-field {
+    width: 100%;
+    padding: 9px 30px 9px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #ffffff;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.project-input-field:focus {
+    outline: none;
+    border-color: #280ad3;
+    box-shadow: 0 0 0 2px rgba(40, 10, 211, 0.15);
+}
+
+.project-dropdown-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #64748b;
+    cursor: pointer;
+    pointer-events: none;
+}
+
+.project-menu-box {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    z-index: 1050;
+    margin-top: 4px;
+    padding: 8px;
+}
+
+.project-search-header {
+    margin-bottom: 6px;
+}
+
+.project-search-bar {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    font-size: 13px;
+    box-sizing: border-box;
+    outline: none;
+    background-color: #f8fafc;
+}
+
+.project-search-bar:focus {
+    border-color: #280ad3;
+    background-color: #ffffff;
+}
+
+.project-item-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.project-item {
+    padding: 8px 10px;
+    font-size: 13px;
+    color: #1e293b;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+}
+
+.project-item:hover {
+    background-color: #f1f5f9;
+    color: #280ad3;
+    font-weight: 600;
+}
+
+.project-item-empty {
+    padding: 8px 10px;
+    font-size: 13px;
+    color: #94a3b8;
+    text-align: center;
 }

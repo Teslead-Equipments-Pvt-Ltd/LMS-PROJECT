@@ -24,14 +24,14 @@ def add_task_api(request):
         body = json.loads(request.body)
         task_name = body.get('task_name', '').strip()
         project_name = body.get('project_name', '').strip()
+        created_date = body.get('created_date', '').strip()
         due_date = body.get('due_date', '').strip()
         status = body.get('status', 'Not Worked').strip()
-        employee_name=body.get('employee_name','').strip()
-
+        employee_name = body.get('employee_name', '').strip()
         if not task_name or not project_name:
             return JsonResponse({'status': 'error', 'message': 'Task Name and Project Name are required.'}, status=400)
 
-        add_task_service(task_name, project_name, due_date, status,employee_name)
+        add_task_service(task_name, project_name, due_date, status, employee_name, created_date=created_date)
         return JsonResponse({'status': 'success', 'message': 'Task created successfully.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
@@ -45,14 +45,15 @@ def update_task_api(request):
         task_id = body.get('id')
         task_name = body.get('task_name', '').strip()
         project_name = body.get('project_name', '').strip()
+        created_date = body.get('created_date', '').strip()
         due_date = body.get('due_date', '').strip()
         status = body.get('status', 'Not Worked').strip()
-        employee_name=body.get('employee_name','').strip()
-
+        employee_name = body.get('employee_name', '').strip()
+       
         if not task_id:
             return JsonResponse({'status': 'error', 'message': 'Task ID is required.'}, status=400)
 
-        update_task_service(task_id, task_name, project_name, due_date, status,employee_name)
+        update_task_service(task_id, task_name, project_name, due_date, status, employee_name, created_date=created_date)
         return JsonResponse({'status': 'success', 'message': 'Task updated successfully.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

@@ -14,13 +14,38 @@
             <button class="btn-bulk-delete" id="bulkDeleteBtn" onclick="openBulkDelete()">
                 Bulk Delete <span id="selectedCount">(0)</span>
             </button>
-            
+
             {% if request.session.user_type|lower == "superadmin" or request.session.user_type|lower == "admin" %}
             <button class="btn-add-task" onclick="openAdd()">
                 + Add New Task
             </button>
             {% endif %}
         </div>
+    </div>
+
+    <!-- Frontend Filter Section -->
+    <div class="task-filters">
+        <div class="filter-group">
+            <label for="taskSearchInput"> Search:</label>
+            <input type="text" id="taskSearchInput" class="filter-input" placeholder="Search task, project, employee..." oninput="filterTasks()">
+        </div>
+        <div class="filter-group">
+            <label for="statusFilter">Status:</label>
+            <select id="statusFilter" class="filter-select" onchange="filterTasks()">
+                <option value="ALL">All Statuses</option>
+                <option value="Not Worked">Not Worked</option>
+                <option value="In Progress">In Progress</option>
+                <option value="On Hold">On Hold</option>
+                <option value="Completed">Completed</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="dueDateFilter">Due Date:</label>
+            <input type="date" id="dueDateFilter" class="filter-input" onchange="filterTasks()">
+        </div>
+        <!-- <div class="filter-group">
+            <button type="button" class="btn-clear-filter" onclick="clearFilters()">Clear Filters</button>
+        </div> -->
     </div>
 
     <div class="table-container">
@@ -34,6 +59,7 @@
                     <th>Task Name</th>
                     <th>Project Name</th>
                     <th>Employee Name</th>
+                    <th>Created Date</th>
                     <th>Due Date</th>
                     <th>Status</th>
                     <th style="text-align: center;">Actions</th>
@@ -41,7 +67,8 @@
             </thead>
             <tbody id="taskTableBody">
                 {% for task in tasks %}
-                <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}" data-due-date="{{ task.due_date }}"
+                <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}"
+                    data-created-date="{{ task.created_date }}" data-due-date="{{ task.due_date }}"
                     data-employee="{{ task.employee_name }}" id="row-{{ task.id }}">
                     <td style="text-align: center;">
                         <input type="checkbox" class="row-checkbox" value="{{ task.id }}" onclick="updateBulk()">
@@ -50,32 +77,38 @@
                     <td><strong>{{ task.task_name }}</strong></td>
                     <td><span class="badge badge-data-logger">{{ task.project_name }}</span></td>
                     <td>{{ task.employee_name |default:"-" }}</td>
+                    <td id="created-date-{{ task.id }}" data-value="{{ task.created_date }}">{{ task.created_date|default:"-" }}</td>
                     <td>{{ task.due_date|default:"-" }}</td>
                     <td>
-                        <select class="status-select" onchange="changeStatus(this, {{ task.id }})">
-                            <option value="Not Worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked </option>
-                            <option value="In Progress" {% if task.status == "In Progress" %}selected{% endif %}>InProgress</option>
-                            <option value="Pending" {% if task.status == "Pending" %}selected{% endif %}>Pending</option>
-                            <option value="Completed" {% if task.status == "Completed" %}selected{% endif %}>Completed
-                            </option>
+                        <select
+                            class="status-select status-{% if task.status == 'Completed' %}completed{% elif task.status == 'In Progress' or task.status == 'InProgress' %}in-progress{% elif task.status == 'On Hold' %}onhold{% else %}not-worked{% endif %}"
+                            onchange="changeStatus(this, {{ task.id }})">
+                            <option value="Not Worked" class="opt-not-worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
+                            <option value="In Progress" class="opt-in-progress" {% if task.status  == "In Progress" or task.status == "InProgress" %}selected{% endif %}>InProgress</option>
+                            <option value="On Hold" class="opt-onhold" {% if task.status == "On Hold" %}selected{% endif %}>On Hold</option>
+                            <option value="Completed" class="opt-completed" {% if task.status == "Completed" %}selected{% endif %}>Completed</option>
                         </select>
                     </td>
                     <td style="text-align: center;">
                         <div class="action-btn-container">
+                            {% if request.session.user_type|lower == "superadmin" or request.session.user_type|lower == "admin" %}
                             <button class="btn-action btn-action-edit" title="Edit Task"
-                                onclick="openEdit({{ task.id }}, '{{ task.task_name|escapejs }}', '{{ task.project_name|escapejs }}', '{{ task.due_date }}', '{{ task.status|escapejs }}','{{ task.employee_name|escapejs }}')">
+                                onclick="openEdit({{ task.id }}, '{{ task.task_name|escapejs }}', '{{ task.project_name|escapejs }}', '{{ task.created_date }}', '{{ task.due_date }}', '{{ task.status|escapejs }}','{{ task.employee_name|escapejs }}')">
                                 Edit
                             </button>
                             <button class="btn-action btn-action-delete" title="Delete Task"
                                 onclick="openDelete({{ task.id }}, '{{ task.task_name|escapejs }}')">
                                 Delete
                             </button>
+                            {% else %}
+                            <span style="color: #94a3b8; font-size: 13px;">-</span>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="8" style="text-align: center; color: #64748b; padding: 25px;">No tasks found. Click
+                    <td colspan="9" style="text-align: center; color: #64748b; padding: 25px;">No tasks found. Click
                         "Add New Task" to create one.</td>
                 </tr>
                 {% endfor %}
@@ -95,24 +128,44 @@
                 <input type="text" id="new_task_name" required placeholder="Enter task name">
             </div>
             <div class="form-group-modal">
-                <label for="new_project_name">Project Name<span class="required">*</span></label>
-                <select id="new_project_name" required>
-                    <option value="" disabled selected>-- Select Project --</option>
-                    {% for proj in projects %}
-                    <option value="{{ proj.project_name }}">{{ proj.project_name }}</option>
-                    {% empty %}
-                    {% endfor %}
-                </select>
+                <label for="add_project_name">Project Name<span class="required">*</span></label>
+                <div class="project-search-wrapper" id="addProjectWrapper">
+                    <input type="text" id="add_project_name" class="project-input-field" placeholder="Select project..."
+                        required readonly onclick="toggleProjectMenu('add')">
+                    <span class="project-dropdown-arrow" onclick="toggleProjectMenu('add')">&#9660;</span>
+                    <div class="project-menu-box" id="addProjectMenu" style="display: none;">
+                        <div class="project-search-header">
+                            <input type="text" id="addProjectSearchInput" class="project-search-bar"
+                                placeholder="🔍 Search project name..." oninput="filterProjectList('add')">
+                        </div>
+                        <ul class="project-item-list" id="addProjectList">
+                            {% for proj in projects %}
+                            <li class="project-item"
+                                onclick="selectProjectItem('add', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
+                            {% empty %}
+                            <li class="project-item-empty">No projects found</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
             </div>
             <div class="form-group-modal">
-                <label for="new_employee_name">Employee Name<span class="required">*</span></label>
-                <select id="new_employee_name" required>
-                    <option value="" disabled selected>-- Select Employee --</option>
+                <label>Assign To Employees<span class="required">*</span></label>
+                <div class="employee-checkbox-list" id="addEmpList">
                     {% for emp in employee %}
-                    <option value="{{ emp.username }}">{{ emp.username }}</option>
+                    <div class="employee-checkbox-item">
+                        <input type="checkbox" class="add-emp-checkbox" id="add_emp_{{ forloop.counter }}"
+                            value="{{ emp.username }}">
+                        <label for="add_emp_{{ forloop.counter }}">{{ emp.username }}</label>
+                    </div>
                     {% empty %}
+                    <div style="color: #94a3b8; font-size: 13px;">No employees found</div>
                     {% endfor %}
-                </select>
+                </div>
+            </div>
+            <div class="form-group-modal">
+                <label for="new_created_date">Created Date</label>
+                <input type="date" id="new_created_date">
             </div>
             <div class="form-group-modal">
                 <label for="new_due_date">Due Date<span class="required">*</span></label>
@@ -123,7 +176,7 @@
                 <select id="new_status" required>
                     <option value="Not Worked">Not Worked</option>
                     <option value="In Progress">In Progress</option>
-                    <option value="Pending">Pending</option>
+                    <option value="On Hold">On Hold</option>
                     <option value="Completed">Completed</option>
                 </select>
             </div>
@@ -147,23 +200,45 @@
                 <input type="text" id="edit_task_name" required placeholder="Enter task name">
             </div>
             <div class="form-group-modal">
-                <label for="edit_project_name">Project Name</label>
-                <select id="edit_project_name" required>
-                    {% for proj in projects %}
-                    <option value="{{ proj.project_name }}">{{ proj.project_name }}</option>
-                    {% empty %}
-                    {% endfor %}
-                </select>
+                <label for="edit_project_name">Project Name<span class="required">*</span></label>
+                <div class="project-search-wrapper" id="editProjectWrapper">
+                    <input type="text" id="edit_project_name" class="project-input-field"
+                        placeholder="Select project..." required readonly onclick="toggleProjectMenu('edit')">
+                    <span class="project-dropdown-arrow" onclick="toggleProjectMenu('edit')">&#9660;</span>
+                    <div class="project-menu-box" id="editProjectMenu" style="display: none;">
+                        <div class="project-search-header">
+                            <input type="text" id="editProjectSearchInput" class="project-search-bar"
+                                placeholder="🔍 Search project name..." oninput="filterProjectList('edit')">
+                        </div>
+                        <ul class="project-item-list" id="editProjectList">
+                            {% for proj in projects %}
+                            <li class="project-item"
+                                onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{
+                                proj.project_name }}</li>
+                            {% empty %}
+                            <li class="project-item-empty">No projects found</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
             </div>
             <div class="form-group-modal">
-                <label for="edit_employee_name">Employee Name<span class="required">*</span></label>
-                <select id="edit_employee_name" required>
-                    <option value="" disabled selected>-- Select Employee --</option>
+                <label>Assign To Employees<span class="required">*</span></label>
+                <div class="employee-checkbox-list" id="editEmpList">
                     {% for emp in employee %}
-                    <option value="{{ emp.username }}">{{ emp.username }}</option>
+                    <div class="employee-checkbox-item">
+                        <input type="checkbox" class="edit-emp-checkbox" id="edit_emp_{{ forloop.counter }}"
+                            value="{{ emp.username }}">
+                        <label for="edit_emp_{{ forloop.counter }}">{{ emp.username }}</label>
+                    </div>
                     {% empty %}
+                    <div style="color: #94a3b8; font-size: 13px;">No employees found</div>
                     {% endfor %}
-                </select>
+                </div>
+            </div>
+            <div class="form-group-modal">
+                <label for="edit_created_date">Created Date</label>
+                <input type="date" id="edit_created_date">
             </div>
             <div class="form-group-modal">
                 <label for="edit_due_date">Due Date<span class="required">*</span></label>
@@ -171,10 +246,10 @@
             </div>
             <div class="form-group-modal">
                 <label for="edit_status">Status</label>
-                <select id="edit_status" required>
+                <select id="edit_status" required onchange="handleEditModalStatusChange()">
                     <option value="Not Worked">Not Worked</option>
                     <option value="In Progress">In Progress</option>
-                    <option value="Pending">Pending</option>
+                    <option value="On Hold">On Hold</option>
                     <option value="Completed">Completed</option>
                 </select>
             </div>
@@ -213,7 +288,7 @@
 <!-- Modal: Edit Success Confirmation -->
 <div class="modal-overlay" id="editSuccessModal">
     <div class="modal-content">
-        <h3 style="color: #16a34a;">Task Saved</h3>
+        <h3 style="color: #17b952;">Task Saved</h3>
         <p id="editSuccessText">Updated successfully.</p>
         <div class="modal-actions">
             <button type="button" class="btn-modal-confirm" onclick="closeSuccess()">OK</button>
@@ -225,28 +300,114 @@
 
     let activeDeleteId = null;
 
-    // 1. Select All Checkboxes
-    function selectAll(headerCheckbox) {
-        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = headerCheckbox.checked);
+    function getTodayDateString() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function updateStatusClass(selectElem) {
+        selectElem.classList.remove('status-not-worked', 'status-in-progress', 'status-onhold', 'status-completed');
+        const val = selectElem.value;
+        if (val === 'Completed') {
+            selectElem.classList.add('status-completed');
+        } else if (val === 'In Progress' || val === 'InProgress') {
+            selectElem.classList.add('status-in-progress');
+        } else if (val === 'On Hold') {
+            selectElem.classList.add('status-onhold');
+        } else {
+            selectElem.classList.add('status-not-worked');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.status-select').forEach(updateStatusClass);
+    });
+
+    // 1. Frontend Filter Tasks Function
+    function filterTasks() {
+        const searchValue = document.getElementById('taskSearchInput').value.toLowerCase().trim();
+        const statusValue = document.getElementById('statusFilter').value;
+        const dueDateValue = document.getElementById('dueDateFilter').value; // format: YYYY-MM-DD
+
+        const rows = document.querySelectorAll('#taskTableBody tr[data-id]');
+
+        rows.forEach(row => {
+            const taskName = row.cells[2] ? row.cells[2].textContent.toLowerCase() : '';
+            const projectName = row.dataset.project ? row.dataset.project.toLowerCase() : '';
+            const employeeName = row.dataset.employee ? row.dataset.employee.toLowerCase() : '';
+        
+            
+            const matchesSearch = !searchValue || 
+                taskName.includes(searchValue) || 
+                projectName.includes(searchValue) || 
+                employeeName.includes(searchValue);
+
+            // Status filter match
+            const selectElem = row.querySelector('.status-select');
+            const currentStatus = selectElem ? selectElem.value : '';
+            let matchesStatus = false;
+            if (statusValue === 'ALL') {
+                matchesStatus = true;
+            } else if (statusValue === 'In Progress') {
+                matchesStatus = (currentStatus === 'In Progress' || currentStatus === 'InProgress');
+            } else {
+                matchesStatus = (currentStatus === statusValue);
+            }
+
+            // Due Date filter match
+            const rowDueDate = row.dataset.dueDate || (row.cells[6] ? row.cells[6].textContent.trim() : '');
+            const matchesDueDate = !dueDateValue || rowDueDate.includes(dueDateValue);
+
+            // Show or Hide row based on filter results
+            if (matchesSearch && matchesStatus && matchesDueDate) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
         updateBulk();
     }
 
-    // 2. Update Bulk Delete Count
+    function clearFilters() {
+        document.getElementById('taskSearchInput').value = '';
+        document.getElementById('statusFilter').value = 'ALL';
+        document.getElementById('dueDateFilter').value = '';
+        filterTasks();
+    }
+
+    // 2. Select All Checkboxes (Only Visible Rows)
+    function selectAll(headerCheckbox) {
+        document.querySelectorAll('#taskTableBody tr:not([style*="display: none"]) .row-checkbox').forEach(cb => {
+            cb.checked = headerCheckbox.checked;
+        });
+        updateBulk();
+    }
+
+    // 3. Update Bulk Delete Count
     function updateBulk() {
         const selected = document.querySelectorAll('.row-checkbox:checked');
         const bulkBtn = document.getElementById('bulkDeleteBtn');
         document.getElementById('selectedCount').textContent = `(${selected.length})`;
         bulkBtn.style.display = selected.length > 0 ? 'inline-block' : 'none';
 
-        const total = document.querySelectorAll('.row-checkbox');
+        const visibleCheckboxes = document.querySelectorAll('#taskTableBody tr:not([style*="display: none"]) .row-checkbox');
         const selectAllHeader = document.getElementById('selectAll');
-        if (selectAllHeader && total.length > 0) {
-            selectAllHeader.checked = (selected.length === total.length);
+        if (selectAllHeader && visibleCheckboxes.length > 0) {
+            const visibleSelected = document.querySelectorAll('#taskTableBody tr:not([style*="display: none"]) .row-checkbox:checked');
+            selectAllHeader.checked = (visibleSelected.length === visibleCheckboxes.length);
+        } else if (selectAllHeader) {
+            selectAllHeader.checked = false;
         }
     }
 
     // 3. Change Status Dropdown Inline
     async function changeStatus(selectElem, taskId) {
+        updateStatusClass(selectElem);
+        filterTasks();
         const row = document.getElementById(`row-${taskId}`);
         if (!row) return;
 
@@ -255,6 +416,22 @@
         const projectName = row.dataset.project || '';
         const employeeName = row.dataset.employee || '';
         const dueDate = row.dataset.dueDate || '';
+        const createdCell = document.getElementById(`created-date-${taskId}`);
+
+        let createdDate = row.dataset.createdDate || (createdCell && createdCell.textContent.trim() !== '-' ? createdCell.textContent.trim() : '');
+        const today = getTodayDateString();
+
+        if (newStatus === 'In Progress' || newStatus === 'InProgress') {
+            if (!createdDate) {
+                createdDate = today;
+                if (createdCell) {
+                    createdCell.textContent = today;
+                    createdCell.dataset.value = today;
+                }
+                row.dataset.createdDate = today;
+            }
+        }
+
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
         try {
@@ -266,6 +443,7 @@
                     task_name: taskName,
                     project_name: projectName,
                     employee_name: employeeName,
+                    created_date: createdDate,
                     due_date: dueDate,
                     status: newStatus
                 })
@@ -276,6 +454,55 @@
     }
 
 
+    function toggleProjectMenu(prefix) {
+        const menu = document.getElementById(`${prefix}ProjectMenu`);
+        const searchInput = document.getElementById(`${prefix}ProjectSearchInput`);
+        if (!menu) return;
+        const isVisible = menu.style.display === 'block';
+        document.querySelectorAll('.project-menu-box').forEach(m => m.style.display = 'none');
+        if (!isVisible) {
+            menu.style.display = 'block';
+            if (searchInput) {
+                searchInput.value = '';
+                filterProjectList(prefix);
+                setTimeout(() => searchInput.focus(), 50);
+            }
+        }
+    }
+
+    function selectProjectItem(prefix, val) {
+        const input = document.getElementById(`${prefix}_project_name`);
+        if (input) input.value = val;
+        const menu = document.getElementById(`${prefix}ProjectMenu`);
+        if (menu) menu.style.display = 'none';
+    }
+
+    function filterProjectList(prefix) {
+        const searchInput = document.getElementById(`${prefix}ProjectSearchInput`);
+        const list = document.getElementById(`${prefix}ProjectList`);
+        if (!searchInput || !list) return;
+        const filter = searchInput.value.toLowerCase().trim();
+        const items = list.querySelectorAll('.project-item');
+        items.forEach(item => {
+            const text = item.textContent.toLowerCase();
+            if (text.includes(filter)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        ['add', 'edit'].forEach(prefix => {
+            const wrapper = document.getElementById(`${prefix}ProjectWrapper`);
+            const menu = document.getElementById(`${prefix}ProjectMenu`);
+            if (wrapper && menu && !wrapper.contains(e.target)) {
+                menu.style.display = 'none';
+            }
+        });
+    });
+
     function openAdd() {
         document.getElementById('addTaskModal').style.display = 'flex';
     }
@@ -283,17 +510,33 @@
     function closeAdd() {
         document.getElementById('addTaskModal').style.display = 'none';
         document.getElementById('addTaskForm').reset();
+        document.querySelectorAll('.add-emp-checkbox').forEach(cb => cb.checked = false);
+        const addMenu = document.getElementById('addProjectMenu');
+        if (addMenu) addMenu.style.display = 'none';
     }
 
     async function saveTask(event) {
         event.preventDefault();
+        const selectedEmps = Array.from(document.querySelectorAll('.add-emp-checkbox:checked')).map(cb => cb.value);
+        if (selectedEmps.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please select at least one employee.',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
         const addtask = {
             task_name: document.getElementById('new_task_name').value.trim(),
-            project_name: document.getElementById('new_project_name').value,
-            employee_name: document.getElementById('new_employee_name').value,
+            project_name: (document.getElementById('add_project_name') || document.getElementById('new_project_name')).value.trim(),
+            employee_name: selectedEmps.join(', '),
+            created_date: document.getElementById('new_created_date').value,
             due_date: document.getElementById('new_due_date').value,
             status: document.getElementById('new_status').value
-        }
+        };
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
         try {
@@ -311,7 +554,7 @@
                     text: 'Task Added Successfully',
                     width: '350px',
                     confirmButtonText: 'Ok'
-                })
+                });
                 window.location.reload();
             } else {
                 Swal.fire({
@@ -319,7 +562,7 @@
                     title: 'Error!',
                     text: data.message || 'Failed to add task.',
                     confirmButtonText: 'OK'
-                })
+                });
             }
         } catch (err) {
             Swal.fire({
@@ -327,32 +570,64 @@
                 title: 'Error',
                 text: 'Network error',
                 confirmButtonText: 'OK'
-            })
+            });
         }
     }
 
 
-    function openEdit(id, name, projectName, dueDate, status, employeeName) {
+    function openEdit(id, name, projectName, createdDate, dueDate, status, employeeName) {
         document.getElementById('edit_task_id').value = id;
         document.getElementById('edit_task_name').value = name || '';
         document.getElementById('edit_project_name').value = projectName || '';
-        document.getElementById('edit_employee_name').value = employeeName || '';
+        document.getElementById('edit_created_date').value = createdDate || '';
         document.getElementById('edit_due_date').value = dueDate || '';
         document.getElementById('edit_status').value = status || 'Not Worked';
+
+        const assignedEmps = (employeeName || '').split(',').map(e => e.trim());
+        document.querySelectorAll('.edit-emp-checkbox').forEach(cb => {
+            cb.checked = assignedEmps.includes(cb.value.trim());
+        });
+
         document.getElementById('editTaskModal').style.display = 'flex';
     }
 
     function closeEdit() {
         document.getElementById('editTaskModal').style.display = 'none';
+        document.querySelectorAll('.edit-emp-checkbox').forEach(cb => cb.checked = false);
+        const editMenu = document.getElementById('editProjectMenu');
+        if (editMenu) editMenu.style.display = 'none';
+    }
+
+    function handleEditModalStatusChange() {
+        const status = document.getElementById('edit_status').value;
+        const createdInput = document.getElementById('edit_created_date');
+        const today = getTodayDateString();
+
+        if ((status === 'In Progress' || status === 'InProgress') && !createdInput.value) {
+            createdInput.value = today;
+        }
     }
 
     async function updateTask(event) {
         event.preventDefault();
+        const selectedEmps = Array.from(document.querySelectorAll('.edit-emp-checkbox:checked')).map(cb => cb.value);
+        if (selectedEmps.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Validation Error',
+                text: 'Please select at least one employee.',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
         const tasks = {
             id: document.getElementById('edit_task_id').value,
             task_name: document.getElementById('edit_task_name').value.trim(),
             project_name: document.getElementById('edit_project_name').value,
-            employee_name: document.getElementById('edit_employee_name').value,
+            employee_name: selectedEmps.join(', '),
+            created_date: document.getElementById('edit_created_date').value,
             due_date: document.getElementById('edit_due_date').value,
             status: document.getElementById('edit_status').value
         };
@@ -367,20 +642,31 @@
             const data = await response.json();
             if (response.ok && data.status === 'success') {
                 closeEdit();
-                Swal.fire({
+                await Swal.fire({
                     icon: 'success',
-                    title: 'success',
+                    title: 'Success',
                     text: 'Task Updated Successfully',
                     width: '350px',
                     confirmButtonText: 'OK'
-                })
+                });
                 window.location.reload();
-                // showSuccess(`Task "${tasks.task_name}" updated successfully!`);
             } else {
-                alert(data.message || 'Failed to update task.');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to update task.',
+                    width: '350px',
+                    confirmButtonText: 'OK'
+                });
             }
         } catch (err) {
-            alert('Network error while updating task.');
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Network error while updating task.',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
         }
     }
 
@@ -513,6 +799,6 @@
     //     window.location.reload();
     // }
 
-    
+
 </script>
 {% endblock %}
