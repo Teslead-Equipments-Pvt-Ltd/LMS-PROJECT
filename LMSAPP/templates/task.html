@@ -323,7 +323,10 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.status-select').forEach(updateStatusClass);
+        document.querySelectorAll('.status-select').forEach(select => {
+            updateStatusClass(select);
+            select.dataset.previousValue = select.value;
+        });
     });
 
     // 1. Frontend Filter Tasks Function
@@ -338,8 +341,7 @@
             const taskName = row.cells[2] ? row.cells[2].textContent.toLowerCase() : '';
             const projectName = row.dataset.project ? row.dataset.project.toLowerCase() : '';
             const employeeName = row.dataset.employee ? row.dataset.employee.toLowerCase() : '';
-        
-            
+
             const matchesSearch = !searchValue || 
                 taskName.includes(searchValue) || 
                 projectName.includes(searchValue) || 
@@ -406,12 +408,40 @@
 
     // 3. Change Status Dropdown Inline
     async function changeStatus(selectElem, taskId) {
+        const newStatus = selectElem.value;
+        const previousStatus = selectElem.dataset.previousValue || 'Not Worked';
+
+        // Check if employee tries to change a task status to "In Progress" when another task is already active
+        if (newStatus === 'In Progress' || newStatus === 'InProgress') {
+            let activeTaskName = null;
+            document.querySelectorAll('#taskTableBody tr').forEach(r => {
+                const s = r.querySelector('.status-select');
+                if (s && s !== selectElem && (s.value === 'In Progress' || s.value === 'InProgress')) {
+                    activeTaskName = r.querySelector('strong')?.textContent.trim() || 'another task';
+                }
+            });
+
+            if (activeTaskName) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Task Already In Progress',
+                    text: `Task "${activeTaskName}" is already In Progress.`,
+                    width: '380px',
+                    confirmButtonText: 'OK'
+                });
+                selectElem.value = previousStatus;
+                updateStatusClass(selectElem);
+                filterTasks();
+                return;
+            }
+        }
+
+        selectElem.dataset.previousValue = newStatus;
         updateStatusClass(selectElem);
         filterTasks();
         const row = document.getElementById(`row-${taskId}`);
         if (!row) return;
 
-        const newStatus = selectElem.value;
         const taskName = row.querySelector('strong').textContent.trim();
         const projectName = row.dataset.project || '';
         const employeeName = row.dataset.employee || '';
@@ -620,6 +650,33 @@
                 confirmButtonText: 'OK'
             });
             return;
+        }
+
+        const editTaskId = document.getElementById('edit_task_id').value;
+        const editStatus = document.getElementById('edit_status').value;
+
+        if (editStatus === 'In Progress' || editStatus === 'InProgress') {
+            let activeTaskName = null;
+            document.querySelectorAll('#taskTableBody tr').forEach(row => {
+                const rowId = row.id ? row.id.replace('row-', '') : '';
+                if (rowId && rowId !== editTaskId) {
+                    const select = row.querySelector('.status-select');
+                    if (select && (select.value === 'In Progress' || select.value === 'InProgress')) {
+                        activeTaskName = row.querySelector('strong')?.textContent.trim() || 'another task';
+                    }
+                }
+            });
+
+            if (activeTaskName) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Task Already In Progress',
+                    text: `Task "${activeTaskName}" is already In Progress.`,
+                    width: '380px',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
         }
 
         const tasks = {

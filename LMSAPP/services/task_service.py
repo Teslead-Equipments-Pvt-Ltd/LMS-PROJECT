@@ -51,12 +51,12 @@ def get_all_tasks_service():
         })
     return tasks
 
-def add_task_service(task_name, project_name, due_date, status, employee_name):
+def add_task_service(task_name, project_name, due_date, status, employee_name,created_date=None):
     with connection.cursor() as cursor:
         cursor.execute("""
-            INSERT INTO tasks (task_name, project_name, due_date, status, employee_name)
-            VALUES (%s, %s, %s, %s, %s)
-        """, [task_name, project_name, due_date, status, employee_name])
+            INSERT INTO tasks (task_name, project_name, due_date, status, employee_name,created_date)
+            VALUES (%s, %s, %s, %s, %s,%s)
+        """, [task_name, project_name, due_date, status, employee_name,created_date])
         task_id = cursor.lastrowid
 
     # 1. Notify assigned employee
