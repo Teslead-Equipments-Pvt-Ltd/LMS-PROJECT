@@ -23,12 +23,20 @@ def get_all_employees():
 
 
 # 1. EDIT / UPDATE Employee Service
-def update_employee_service(employee_id, username, role):
+def update_employee_service(employee_id, username, role,password=None):
     """
     Updates the username and role for an employee in the 'users' table.
     """
     with connection.cursor() as cursor:
-        cursor.execute("""
+        if password:
+            hashed_pwd = make_password(password)
+            cursor.execute("""
+            UPDATE users
+            SET username = %s, role = %s, password = %s
+            WHERE employee_id = %s
+        """, [username, role, hashed_pwd, employee_id])
+        else:
+            cursor.execute("""
             UPDATE users
             SET username = %s, role = %s
             WHERE employee_id = %s

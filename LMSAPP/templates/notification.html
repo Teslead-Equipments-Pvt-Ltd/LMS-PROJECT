@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Notifications</h2>
+    <div style="margin-top: 15px;">
+        {% if notifications %}
+            <ul style="list-style: none; padding: 0;">
+                {% for n in notifications %}
+                <li style="padding: 12px; margin-bottom: 10px; border-radius: 6px; background: {% if n.is_read %}#f9f9f9{% else %}#e8f4fd{% endif %}; border-left: 4px solid #007bff;">
+                    <strong>{{ n.title }}</strong> 
+                    <span style="font-size: 12px; color: #777; float: right;">{{ n.created_at }}</span>
+                    <p style="margin: 5px 0 0 0; color: #555;">{{ n.message }}</p>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No notifications available.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+

@@ -11,6 +11,7 @@ page_patterns = [
     path('', include('LMSAPP.urls.page_urls.task_page_urls')),
     path('',include('LMSAPP.urls.page_urls.employee_page_urls')),
     path('',include('LMSAPP.urls.page_urls.dashboard_page_urls')),
+    path('',include('LMSAPP.urls.page_urls.notification_page_urls')),
 ]
 
 # API URLS

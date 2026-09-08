@@ -32,8 +32,8 @@ def update_employee_api(request):
             employee_id=employee_id,
             username=username,
             role=role,
-            password=password if password else None,
-            is_super_admin=is_super_admin
+            password=password,
+            
         )
         return JsonResponse({'status': 'success', 'message': 'Employee updated successfully'})
     except Exception as e:

@@ -25,9 +25,11 @@
 
         {% if request.session.user_type == 'Employee' or request.session.role == 'EMPLOYEE' %}
             <li><a href="{% url 'task_page' %}">Task</a></li>
+            <li><a href="{% url 'notification_page'%}">Notifications</a></li>
+
         {% else %}
             <li><a href="{% url 'dashboard_page' %}">Dashboard</a></li>
-            <li><a href=" ">Notifications</a></li>
+            <li><a href="{% url 'notification_page'%}">Notifications</a></li>
             <li><a href="{% url 'task_page' %}">Task</a></li>
             <li><a href="{% url 'project_page' %}">Project</a></li>
             <li><a href=" ">Assigned Tasks</a></li>
