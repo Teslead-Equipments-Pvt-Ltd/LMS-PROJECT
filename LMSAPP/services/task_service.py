@@ -129,50 +129,31 @@ def add_task_service(task_name, project_name, due_date, status, employee_name, c
     )
 
     return True
-def update_task_service(task_id, task_name, project_name, due_date, status, employee_name, created_date=None, updating_employee=None):
-    """
-    Updates task details and manages status updates in the database.
-    """
+def update_task_service(task_id, task_name, project_name, due_date, status, employee_name, created_date=None):
     today_str = datetime.date.today().strftime("%Y-%m-%d")
-    tasks_table()
-
-    # Step 1: Fetch existing task details from the database
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT employee_status, status, created_date FROM tasks WHERE id = %s", [task_id])
-        row = cursor.fetchone()
-        existing_emp_status_raw = row[0] if row else None
-        existing_status_db = row[1] if row else 'Not Worked'
-        db_created_date = row[2] if row else None
-
-    # Step 2: Parse status dictionary for assigned employees
-    emp_status_dict = parse_employee_status(employee_name, existing_emp_status_raw, default_status=existing_status_db)
-    
-    # Step 3: Update employee status based on who is performing the update
-    if updating_employee and updating_employee in emp_status_dict:
-        emp_status_dict[updating_employee] = status
-    elif not updating_employee and status:
-        # If updated by Admin, set status for all assigned employees
-        for emp in emp_status_dict:
-            emp_status_dict[emp] = status
-
-    # Step 4: Calculate the overall task status
-    overall_status = calculate_overall_status(emp_status_dict) if emp_status_dict else (status or 'Not Worked')
-    
-    # Step 5: Automatically set created date if task starts ('In Progress')
-    if (overall_status == "In Progress" or status == "In Progress") and not created_date and not db_created_date:
+    if status == "In Progress" and not created_date:
         created_date = today_str
-    elif not created_date:
-        created_date = db_created_date
-
-    emp_status_json = json.dumps(emp_status_dict)
-
-    # Step 6: Update the task record in the database
+    
     with connection.cursor() as cursor:
         cursor.execute("""
             UPDATE tasks
-            SET task_name = %s, project_name = %s, created_date = %s, due_date = %s, status = %s, employee_name = %s, employee_status = %s
+            SET task_name = %s, project_name = %s, created_date = %s, due_date = %s, status = %s, employee_name = %s
             WHERE id = %s
-        """, [task_name, project_name, created_date, due_date, overall_status, employee_name, emp_status_json, task_id])
+        """, [task_name, project_name, created_date, due_date, status, employee_name, task_id])
+
+        if status.lower() == 'completed' :
+            cursor.execute("SELECT employee_name, task_name FROM tasks WHERE id = %s", [task_id])
+            row = cursor.fetchone()
+            if row:
+                employee_name = row[0]
+                task_name = row[1]
+                create_notification_service(
+                    recipient=employee_name,
+                    title=f"Task Completed: {task_name}",
+                    message=f"{employee_name} has completed the task",
+                    notification_type='task_completed',
+                    reference_id=task_id
+                )
 
     return True
 
