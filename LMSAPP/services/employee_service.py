@@ -88,7 +88,7 @@ def get_employee_tasks(username=None, employee_id=None):
             SELECT id, task_name, project_name, created_date, due_date, status, employee_name
             FROM tasks 
             WHERE FIND_IN_SET(%s, REPLACE(employee_name, ', ', ',')) > 0 OR employee_name = %s
-            ORDER BY id ASC
+            ORDER BY id DESC
         """, [username, username])
         rows = cursor.fetchall()
         

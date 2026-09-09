@@ -81,7 +81,7 @@ def bulk_delete_projects_api(request):
         return JsonResponse({'message': 'Method not allowed'}, status=405)
     try:
         body = json.loads(request.body)
-        project_ids = body.get('ids', [])
+        project_ids = body.get('count') or body.get('count') or []
         if not project_ids:
             return JsonResponse({'status': 'error', 'message': 'No project IDs provided.'}, status=400)
         bulk_delete_projects_service(project_ids)

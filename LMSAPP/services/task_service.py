@@ -34,7 +34,7 @@ def get_all_tasks_service():
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT id, task_name, project_name, created_date, due_date, status, employee_name
-            FROM tasks ORDER BY id ASC
+            FROM tasks ORDER BY id DESC
         """)
         rows = cursor.fetchall()
         
@@ -82,11 +82,11 @@ def add_task_service(task_name, project_name, due_date, status, employee_name,cr
     return True
 
 def update_task_service(task_id, task_name, project_name, due_date, status, employee_name, created_date=None, updated_by=None, user_role=None):
-    # 1. Set today's date if task moved to In Progress
+  
     if status == "In Progress" and not created_date:
         created_date = datetime.date.today().strftime("%Y-%m-%d")
 
-    # 2. Update task details in the database
+
     with connection.cursor() as cursor:
         cursor.execute("""
             UPDATE tasks

@@ -83,7 +83,8 @@
                 {% for task in tasks %}
                 <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}"
                     data-created-date="{{ task.created_date }}" data-due-date="{{ task.due_date }}"
-                    data-employee="{{ task.employee_name }}" data-module-type="{{ task.module_type }}" id="row-{{ task.id }}">
+                    data-employee="{{ task.employee_name }}" data-module-type="{{ task.module_type }}"
+                    id="row-{{ task.id }}">
                     <td style="text-align: center;">
                         <input type="checkbox" class="row-checkbox" value="{{ task.id }}" onclick="updateBulk()">
                     </td>
@@ -100,7 +101,7 @@
                             <option value="Not Worked" class="opt-not-worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
                             <option value="In Progress" class="opt-in-progress" {% if task.status == "In Progress" or task.status == "InProgress" %}selected{% endif %}>InProgress</option>
                             <option value="On Hold" class="opt-onhold" {% if task.status == "On Hold" %}selected{% endif %}>On Hold</option>
-                            <option value="Completed" class="opt-completed" {% if task.status == "Completed" %}selected{%  endif %}>Completed</option>
+                            <option value="Completed" class="opt-completed" {% if task.status == "Completed" %}selected{% endif %}>Completed</option>
                         </select>
                     </td>
                     <td style="text-align: center;">
@@ -226,7 +227,9 @@
                         </div>
                         <ul class="project-item-list" id="editProjectList">
                             {% for proj in projects %}
-                            <li class="project-item" onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
+                            <li class="project-item"
+                                onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{
+                                proj.project_name }}</li>
                             {% empty %}
                             <li class="project-item-empty">No projects found</li>
                             {% endfor %}
@@ -337,7 +340,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.status-select').forEach(select => {
             updateStatusClass(select);
-            select.dataset.previousValue = select.value; 
+            select.dataset.previousValue = select.value;
         });
     });
 
@@ -438,7 +441,7 @@
         }
     }
 
-   
+
     async function changeStatus(selectElem, taskId) {
         const newStatus = selectElem.value;
         const previousStatus = selectElem.dataset.previousValue || 'Not Worked';
