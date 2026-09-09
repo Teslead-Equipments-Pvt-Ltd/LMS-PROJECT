@@ -1,23 +1,240 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}LOGNOTE{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h2>Notifications</h2>
-    <div style="margin-top: 15px;">
-        {% if notifications %}
-            <ul style="list-style: none; padding: 0;">
-                {% for n in notifications %}
-                <li style="padding: 12px; margin-bottom: 10px; border-radius: 6px; background: {% if n.is_read %}#f9f9f9{% else %}#e8f4fd{% endif %}; border-left: 4px solid #007bff;">
-                    <strong>{{ n.title }}</strong> 
-                    <span style="font-size: 12px; color: #777; float: right;">{{ n.created_at }}</span>
-                    <p style="margin: 5px 0 0 0; color: #555;">{{ n.message }}</p>
-                </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p>No notifications available.</p>
-        {% endif %}
-    </div>
-</div>
-{% endblock %}
+<link rel="stylesheet" href="{% static 'css/notification.css' %}">
 
+<div class="notification-card-wrapper">
+
+    <div class="notification-topbar">
+        <h2>
+            Notifications 
+            {% comment %} <span class="badge-count" id="totalCountBadge">{{ notifications|length }}</span> {% endcomment %}
+        </h2>
+
+        <div class="notification-actions">
+            
+            <select id="typeFilter" class="form-select-simple" onchange="handleFilterChange()">
+                <option value="ALL">All Types</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="HOLD">On Hold</option>
+                <option value="CREATED">Created</option>
+            </select>
+
+            <!-- Search Input -->
+            <div class="search-box-simple">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="notificationSearch" placeholder="Search notification..." oninput="handleSearch()">
+            </div>
+        </div>
+    </div>
+
+    <!-- Fixed Layout Table -->
+    <div class="table-container-simple">
+        <table class="notification-table">
+            <thead>
+                <tr>
+                    <th style="width: 55px; text-align: center;">#</th>
+                    <th style="width: 110px;">Type</th>
+                    <th style="width: 230px;">Title</th>
+                    <th>Message</th>
+                    <th style="width: 130px;">Recipient</th>
+                    <th style="width: 150px; text-align: center;">Date & Time</th>
+                </tr>
+            </thead>
+            <tbody id="notificationTableBody">
+                {% for n in notifications %}
+                <tr class="notification-row" data-type="{{ n.notification_type|lower }}">
+                    <td style="text-align: center;" class="row-sno">{{ forloop.counter }}</td>
+                    <td>
+                        {% if 'completed' in n.notification_type|lower %}
+                            <span class="badge-pill badge-completed">Completed</span>
+                        {% elif 'hold' in n.notification_type|lower %}
+                            <span class="badge-pill badge-on-hold">On Hold</span>
+                        {% elif 'pending' in n.notification_type|lower %}
+                            <span class="badge-pill badge-pending">Pending</span>
+                        {% else %}
+                            <span class="badge-pill badge-created">New Task</span>
+                        {% endif %}
+                    </td>
+                    <td title="{{ n.title }}"><strong>{{ n.title }}</strong></td>
+                    <td title="{{ n.message }}">{{ n.message }}</td>
+                    <td>
+                        <span class="badge-recipient-tag">{{ n.recipient|default:"-" }}</span>
+                    </td>
+                    <td style="text-align: center;"><span class="time-text">{{ n.created_at }}</span></td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="no-records">No notifications available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div id="noMatchMessage" class="no-records" style="display: none;">
+            No matching notifications found.
+        </div>
+    </div>
+
+    <!-- Simple Pagination Bar (10 per page) -->
+    <div class="pagination-bar" id="paginationBar" style="display: none;">
+        <div class="pagination-text" id="paginationInfo">
+            Showing 0-0 of 0 notifications
+        </div>
+        <div class="pagination-controls" id="paginationControls">
+            <!-- Dynamic page buttons injected by JavaScript -->
+        </div>
+    </div>
+
+</div>
+
+<!-- Client-side Filtering & Pagination Script -->
+<script>
+    let currentFilter = 'ALL';
+    let searchQuery = '';
+    let currentPage = 1;
+    const pageSize = 10; // Fixed 10 items per page
+    let matchingRows = [];
+
+    document.addEventListener('DOMContentLoaded', function () {
+        updateFilteredRows();
+    });
+
+    function handleFilterChange() {
+        currentFilter = document.getElementById('typeFilter').value;
+        currentPage = 1;
+        updateFilteredRows();
+    }
+
+    function handleSearch() {
+        searchQuery = document.getElementById('notificationSearch').value.toLowerCase().trim();
+        currentPage = 1;
+        updateFilteredRows();
+    }
+
+    function updateFilteredRows() {
+        const allRows = Array.from(document.querySelectorAll('#notificationTableBody tr.notification-row'));
+        matchingRows = [];
+
+        allRows.forEach(row => {
+            const rowType = (row.dataset.type || '').toLowerCase();
+            const rowText = row.textContent.toLowerCase();
+
+            // Type/Status Filter
+            let matchesType = false;
+            if (currentFilter === 'ALL') {
+                matchesType = true;
+            } else if (currentFilter === 'COMPLETED') {
+                matchesType = rowType.includes('completed');
+            } else if (currentFilter === 'HOLD') {
+                matchesType = rowType.includes('hold');
+            } else if (currentFilter === 'CREATED') {
+                matchesType = rowType.includes('created');
+            }
+
+            // Search Keyword Filter
+            const matchesSearch = !searchQuery || rowText.includes(searchQuery);
+
+            if (matchesType && matchesSearch) {
+                matchingRows.push(row);
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Update Count
+        const countBadge = document.getElementById('totalCountBadge');
+        if (countBadge) countBadge.textContent = matchingRows.length;
+
+        // No Match Message
+        const noMatch = document.getElementById('noMatchMessage');
+        if (noMatch) {
+            noMatch.style.display = (allRows.length > 0 && matchingRows.length === 0) ? 'block' : 'none';
+        }
+
+        renderPage();
+    }
+
+    function renderPage() {
+        const totalItems = matchingRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+        const paginationBar = document.getElementById('paginationBar');
+
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+
+        matchingRows.forEach((row, index) => {
+            if (index >= startIndex && index < endIndex) {
+                row.style.display = '';
+                // Dynamic S.No according to page
+                const snoCell = row.querySelector('.row-sno');
+                if (snoCell) snoCell.textContent = index + 1;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Toggle Pagination Bar
+        if (totalItems > 0) {
+            paginationBar.style.display = 'flex';
+        } else {
+            paginationBar.style.display = 'none';
+            return;
+        }
+
+        // Update Pagination Info
+        const displayStart = totalItems === 0 ? 0 : startIndex + 1;
+        const displayEnd = Math.min(endIndex, totalItems);
+        const infoElem = document.getElementById('paginationInfo');
+        if (infoElem) {
+            infoElem.textContent = `Showing ${displayStart}-${displayEnd} of ${totalItems} notifications`;
+        }
+
+        // Build Buttons
+        const controls = document.getElementById('paginationControls');
+        controls.innerHTML = '';
+
+        // Previous Button
+        const prevBtn = document.createElement('button');
+        prevBtn.type = 'button';
+        prevBtn.className = 'page-btn';
+        prevBtn.innerHTML = '&laquo;';
+        prevBtn.title = 'Previous';
+        prevBtn.disabled = (currentPage === 1);
+        prevBtn.onclick = () => goToPage(currentPage - 1);
+        controls.appendChild(prevBtn);
+
+        // Page Number Buttons
+        for (let p = 1; p <= totalPages; p++) {
+            const pBtn = document.createElement('button');
+            pBtn.type = 'button';
+            pBtn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+            pBtn.textContent = p;
+            pBtn.onclick = () => goToPage(p);
+            controls.appendChild(pBtn);
+        }
+
+        // Next Button
+        const nextBtn = document.createElement('button');
+        nextBtn.type = 'button';
+        nextBtn.className = 'page-btn';
+        nextBtn.innerHTML = '&raquo;';
+        nextBtn.title = 'Next';
+        nextBtn.disabled = (currentPage === totalPages);
+        nextBtn.onclick = () => goToPage(currentPage + 1);
+        controls.appendChild(nextBtn);
+    }
+
+    function goToPage(pageNumber) {
+        currentPage = pageNumber;
+        renderPage();
+    }
+</script>
+{% endblock %}

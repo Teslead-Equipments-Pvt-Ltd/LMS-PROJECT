@@ -66,10 +66,4 @@ def get_notifications_by_user(recipient=None, is_admin=False):
         })
     return notifications
 
-# def mark_notification_as_read(notification_id):
-#     """
-#     Marks a notification as read.
-#     """
-#     with connection.cursor() as cursor:
-#         cursor.execute("UPDATE notifications SET is_read = 1 WHERE id = %s", [notification_id])
-#     return True
+

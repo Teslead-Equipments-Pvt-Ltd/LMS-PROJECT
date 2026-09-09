@@ -126,9 +126,8 @@
 
 <script>
     const loggedInRole = "{{ request.session.role|default:'' }}";
-    
     const loggedInEmpId = "{{ request.session.employee_id|default:'' }}";
-    const isSuperAdmin = (loggedInRole === 'SUPER_ADMIN');
+    const isAdminOrSuperAdmin = (loggedInRole === 'ADMIN' || loggedInRole === 'SUPER_ADMIN');
 
     // 1. Open popup & populate data
     function editemployee(employee_id, username, role) {
@@ -139,16 +138,16 @@
         // Role dropdown
         const roleSelect = document.getElementById('role');
         roleSelect.value = role;
-        // Only Super Admin can change roles; regular employees have it disabled
-        roleSelect.disabled = !isSuperAdmin;
+        // Both Admin and Super Admin can change roles; regular employees have it disabled
+        roleSelect.disabled = !isAdminOrSuperAdmin;
 
-        // Password change logic: Super Admin can change for anyone; Employee can only change their own
+        // Password change logic: Admin and Super Admin can change for anyone; Employee can only change their own
         const editPasswordInput = document.getElementById('edit_password');
         const passwordGroup = document.getElementById('edit_password_group');
         const passwordNote = document.getElementById('password_permission_note');
         editPasswordInput.value = '';
 
-        const canChangePassword = isSuperAdmin || (loggedInEmpId === employee_id);
+        const canChangePassword = isAdminOrSuperAdmin || (loggedInEmpId === employee_id);
         if (canChangePassword) {
             passwordGroup.style.display = 'block';
             passwordNote.style.display = 'none';

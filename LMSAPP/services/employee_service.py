@@ -23,7 +23,7 @@ def get_all_employees():
 
 
 
-def update_employee_service(employee_id, username, role):
+def update_employee_service(employee_id, username, role, password=None):
     """
     Updates the username and role for an employee in the 'users' table.
     """
