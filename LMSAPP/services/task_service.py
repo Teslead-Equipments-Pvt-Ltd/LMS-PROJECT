@@ -1,3 +1,4 @@
+from django.contrib import admin
 import datetime
 from django.db import connection
 from LMSAPP.services.notification_service import create_notification_service
@@ -80,11 +81,12 @@ def add_task_service(task_name, project_name, due_date, status, employee_name,cr
 
     return True
 
-def update_task_service(task_id, task_name, project_name, due_date, status, employee_name, created_date=None):
-    today_str = datetime.date.today().strftime("%Y-%m-%d")
+def update_task_service(task_id, task_name, project_name, due_date, status, employee_name, created_date=None, updated_by=None, user_role=None):
+    # 1. Set today's date if task moved to In Progress
     if status == "In Progress" and not created_date:
-        created_date = today_str
-    
+        created_date = datetime.date.today().strftime("%Y-%m-%d")
+
+    # 2. Update task details in the database
     with connection.cursor() as cursor:
         cursor.execute("""
             UPDATE tasks
@@ -92,19 +94,46 @@ def update_task_service(task_id, task_name, project_name, due_date, status, empl
             WHERE id = %s
         """, [task_name, project_name, created_date, due_date, status, employee_name, task_id])
 
-        if status.lower() == 'completed' :
-            cursor.execute("SELECT employee_name, task_name FROM tasks WHERE id = %s", [task_id])
-            row = cursor.fetchone()
-            if row:
-                employee_name = row[0]
-                task_name = row[1]
-                create_notification_service(
-                    recipient=employee_name,
-                    title=f"Task Completed: {task_name}",
-                    message=f"{employee_name} has completed the task",
-                    notification_type='task_completed',
-                    reference_id=task_id
-                )
+    # 3. Check who made the change (Admin or Employee)
+    if user_role in ['ADMIN', 'SUPER_ADMIN']:
+        changed_by = "Admin"
+    else:
+        changed_by = updated_by or employee_name
+
+    current_status = (status or "").lower()
+
+    # 4. If status is Completed -> Notify ONLY Admin
+    if current_status == 'completed':
+        create_notification_service(
+            recipient='Admin',
+            title=f"Task Completed: {task_name}",
+            message=f"{changed_by} has completed the task",
+            notification_type='task_completed',
+            reference_id=task_id
+        )
+
+    # 5. If status is On Hold or Pending -> Notify BOTH Admin and Employee
+    elif current_status in ['on hold', 'hold', 'pending']:
+        status_text = "on hold"
+
+        # (a) Send notification to Admin
+        create_notification_service(
+            recipient='Admin',
+            title=f"Task {status_text}: {task_name}",
+            message=f"{changed_by} has put the task {status_text}",
+            notification_type=f"task_{current_status.replace(' ', '_')}",
+            reference_id=task_id
+        )
+
+        # (b) Send notification to Employee
+        if employee_name and employee_name != 'Admin':
+            create_notification_service(
+                recipient=employee_name,
+                title=f"Task {status_text}: {task_name}",
+                message=f"{changed_by} has put the task {status_text}",
+                notification_type=f"task_{current_status.replace(' ', '_')}",
+                reference_id=task_id
+            )
 
     return True
 

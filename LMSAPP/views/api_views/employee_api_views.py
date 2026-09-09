@@ -18,11 +18,11 @@ def update_employee_api(request):
 
         current_role = request.session.get('role')
         current_emp_id = request.session.get('employee_id')
-        is_super_admin = (current_role == 'SUPER_ADMIN')
+        is_admin_or_super = current_role in ['ADMIN', 'SUPER_ADMIN']
 
-        # Super Admin can change password for all; Employee can only change their own
+        # Admin and Super Admin can change password for all; Employee can only change their own
         if password:
-            if not is_super_admin and current_emp_id != employee_id:
+            if not is_admin_or_super and current_emp_id != employee_id:
                 return JsonResponse({
                     'status': 'error',
                     'message': 'Permission denied: You can only change your own password.'
@@ -32,31 +32,50 @@ def update_employee_api(request):
             employee_id=employee_id,
             username=username,
             role=role,
-            password=password,
-            
+            password=password if password else None,
         )
         return JsonResponse({'status': 'success', 'message': 'Employee updated successfully'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def delete_employee_api(request):
-    if request.method == 'POST':
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+    try:
+        current_role = request.session.get('role')
+        if current_role not in ['ADMIN', 'SUPER_ADMIN']:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Permission denied: Only Admin and Super Admin can delete employees.'
+            }, status=403)
+
         data = json.loads(request.body)
         employee_id = data.get('employee_id')
-        
+        if not employee_id:
+            return JsonResponse({'status': 'error', 'message': 'Employee ID is required.'}, status=400)
+            
         delete_employee_service(employee_id)
         return JsonResponse({'status': 'success', 'message': 'Employee deleted successfully'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def add_employee_api(request):
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
     
     try:
+        current_role = request.session.get('role')
+        if current_role not in ['ADMIN', 'SUPER_ADMIN']:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Permission denied: Only Admin and Super Admin can add employees.'
+            }, status=403)
+
         data = json.loads(request.body)
         employee_id = data.get('employee_id', '').strip()
         username = data.get('username', '').strip()
         role = data.get('role', 'EMPLOYEE').strip()
-        password = data.get('password', '').strip()  # <-- 1. EXTRACT PASSWORD
+        password = data.get('password', '').strip()
 
         if not employee_id or not username:
             return JsonResponse({'status': 'error', 'message': 'Employee ID and Name are required.'}, status=400)
@@ -64,7 +83,6 @@ def add_employee_api(request):
         if not password:
             return JsonResponse({'status': 'error', 'message': 'Password is required.'}, status=400)
 
-        # 2. PASS PASSWORD TO SERVICE
         add_employee_service(employee_id, username, role, password)
         
         return JsonResponse({'status': 'success', 'message': 'Employee added successfully!'})

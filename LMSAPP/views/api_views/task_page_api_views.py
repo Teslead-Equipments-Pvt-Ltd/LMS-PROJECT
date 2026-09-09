@@ -53,7 +53,15 @@ def update_task_api(request):
         if not task_id:
             return JsonResponse({'status': 'error', 'message': 'Task ID is required.'}, status=400)
 
-        update_task_service(task_id, task_name, project_name, due_date, status, employee_name, created_date=created_date)
+        updated_by = request.session.get('user_name') or 'Admin'
+        user_role = request.session.get('role', '')
+
+        update_task_service(
+            task_id, task_name, project_name, due_date, status, employee_name,
+            created_date=created_date,
+            updated_by=updated_by,
+            user_role=user_role
+        )
         return JsonResponse({'status': 'success', 'message': 'Task updated successfully.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

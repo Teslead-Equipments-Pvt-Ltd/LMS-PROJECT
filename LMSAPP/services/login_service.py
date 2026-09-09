@@ -38,7 +38,7 @@ def authenticate_user_service(username, password):
                 superuser = True
             elif db_role == 'ADMIN':
                 user_type = 'Admin'
-                superuser = False
+                superuser = True
             else:
                 user_type = 'Employee'
                 superuser = False
