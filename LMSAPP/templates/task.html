@@ -27,7 +27,16 @@
     <div class="task-filters">
         <div class="filter-group">
             <label for="taskSearchInput"> Search:</label>
-            <input type="text" id="taskSearchInput" class="filter-input" placeholder="Search task, project, employee..." oninput="filterTasks()">
+            <input type="text" id="taskSearchInput" class="filter-input" placeholder="Search task, project, employee..."
+                oninput="filterTasks()">
+        </div>
+        <div class="filter-group" style="display: none;">
+            <label for="moduleTypeFilter">Module Type:</label>
+            <select id="moduleTypeFilter" class="filter-select" onchange="filterTasks()">
+                <option value="ALL">All Module Types</option>
+                <option value="Data Logger">Data Logger</option>
+                <option value="Internal Project">Internal Project</option>
+            </select>
         </div>
         <div class="filter-group">
             <label for="statusFilter">Status:</label>
@@ -42,6 +51,11 @@
         <div class="filter-group">
             <label for="dueDateFilter">Due Date:</label>
             <input type="date" id="dueDateFilter" class="filter-input" onchange="filterTasks()">
+        </div>
+
+        <div class="filter-group">
+            <label for="createdDateFilter">Created Date:</label>
+            <input type="date" id="createdDateFilter" class="filter-input" onchange="filterTasks()">
         </div>
         <!-- <div class="filter-group">
             <button type="button" class="btn-clear-filter" onclick="clearFilters()">Clear Filters</button>
@@ -69,14 +83,14 @@
                 {% for task in tasks %}
                 <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}"
                     data-created-date="{{ task.created_date }}" data-due-date="{{ task.due_date }}"
-                    data-employee="{{ task.employee_name }}" id="row-{{ task.id }}">
+                    data-employee="{{ task.employee_name }}" data-module-type="{{ task.module_type }}" id="row-{{ task.id }}">
                     <td style="text-align: center;">
                         <input type="checkbox" class="row-checkbox" value="{{ task.id }}" onclick="updateBulk()">
                     </td>
                     <td>{{ task.s_no }}</td>
                     <td><strong>{{ task.task_name }}</strong></td>
                     <td><span class="badge badge-data-logger">{{ task.project_name }}</span></td>
-                    <td>{{ task.employee_name |default:"-" }}</td>
+                    <td><b>{{ task.employee_name |default:"-" }}</b></td>
                     <td id="created-date-{{ task.id }}" data-value="{{ task.created_date }}">{{ task.created_date|default:"-" }}</td>
                     <td>{{ task.due_date|default:"-" }}</td>
                     <td>
@@ -84,9 +98,9 @@
                             class="status-select status-{% if task.status == 'Completed' %}completed{% elif task.status == 'In Progress' or task.status == 'InProgress' %}in-progress{% elif task.status == 'On Hold' %}onhold{% else %}not-worked{% endif %}"
                             onchange="changeStatus(this, {{ task.id }})">
                             <option value="Not Worked" class="opt-not-worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
-                            <option value="In Progress" class="opt-in-progress" {% if task.status  == "In Progress" or task.status == "InProgress" %}selected{% endif %}>InProgress</option>
+                            <option value="In Progress" class="opt-in-progress" {% if task.status == "In Progress" or task.status == "InProgress" %}selected{% endif %}>InProgress</option>
                             <option value="On Hold" class="opt-onhold" {% if task.status == "On Hold" %}selected{% endif %}>On Hold</option>
-                            <option value="Completed" class="opt-completed" {% if task.status == "Completed" %}selected{% endif %}>Completed</option>
+                            <option value="Completed" class="opt-completed" {% if task.status == "Completed" %}selected{%  endif %}>Completed</option>
                         </select>
                     </td>
                     <td style="text-align: center;">
@@ -171,7 +185,7 @@
                 <label for="new_due_date">Due Date<span class="required">*</span></label>
                 <input type="date" id="new_due_date" required>
             </div>
-            <div class="form-group-modal">
+            <div class="form-group-modal" style="display: none;">
                 <label for="new_status">Status</label>
                 <select id="new_status" required>
                     <option value="Not Worked">Not Worked</option>
@@ -212,9 +226,7 @@
                         </div>
                         <ul class="project-item-list" id="editProjectList">
                             {% for proj in projects %}
-                            <li class="project-item"
-                                onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{
-                                proj.project_name }}</li>
+                            <li class="project-item" onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
                             {% empty %}
                             <li class="project-item-empty">No projects found</li>
                             {% endfor %}
@@ -244,7 +256,7 @@
                 <label for="edit_due_date">Due Date<span class="required">*</span></label>
                 <input type="date" id="edit_due_date" required>
             </div>
-            <div class="form-group-modal">
+            <div class="form-group-modal" style="display: none;">
                 <label for="edit_status">Status</label>
                 <select id="edit_status" required onchange="handleEditModalStatusChange()">
                     <option value="Not Worked">Not Worked</option>
@@ -325,15 +337,26 @@
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.status-select').forEach(select => {
             updateStatusClass(select);
-            select.dataset.previousValue = select.value;
+            select.dataset.previousValue = select.value; 
         });
     });
 
     // 1. Frontend Filter Tasks Function
     function filterTasks() {
-        const searchValue = document.getElementById('taskSearchInput').value.toLowerCase().trim();
-        const statusValue = document.getElementById('statusFilter').value;
-        const dueDateValue = document.getElementById('dueDateFilter').value; // format: YYYY-MM-DD
+        const searchInput = document.getElementById('taskSearchInput');
+        const searchValue = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+        const moduleTypeElem = document.getElementById('moduleTypeFilter');
+        const moduleTypeValue = moduleTypeElem ? moduleTypeElem.value : 'ALL';
+
+        const statusElem = document.getElementById('statusFilter');
+        const statusValue = statusElem ? statusElem.value : 'ALL';
+
+        const createdDateElem = document.getElementById('createdDateFilter');
+        const createdDateValue = createdDateElem ? createdDateElem.value : '';
+
+        const dueDateElem = document.getElementById('dueDateFilter');
+        const dueDateValue = dueDateElem ? dueDateElem.value : '';
 
         const rows = document.querySelectorAll('#taskTableBody tr[data-id]');
 
@@ -341,11 +364,15 @@
             const taskName = row.cells[2] ? row.cells[2].textContent.toLowerCase() : '';
             const projectName = row.dataset.project ? row.dataset.project.toLowerCase() : '';
             const employeeName = row.dataset.employee ? row.dataset.employee.toLowerCase() : '';
+            const moduleType = row.dataset.moduleType || '';
 
-            const matchesSearch = !searchValue || 
-                taskName.includes(searchValue) || 
-                projectName.includes(searchValue) || 
+            const matchesSearch = !searchValue ||
+                taskName.includes(searchValue) ||
+                projectName.includes(searchValue) ||
                 employeeName.includes(searchValue);
+
+            // Module Type filter match
+            const matchesModuleType = (moduleTypeValue === 'ALL') || (moduleType === moduleTypeValue);
 
             // Status filter match
             const selectElem = row.querySelector('.status-select');
@@ -359,24 +386,29 @@
                 matchesStatus = (currentStatus === statusValue);
             }
 
-            // Due Date filter match
+            // Created Date & Due Date filter match
+            const rowCreatedDate = row.dataset.createdDate || (document.getElementById(`created-date-${row.dataset.id}`) ? document.getElementById(`created-date-${row.dataset.id}`).textContent.trim() : '');
             const rowDueDate = row.dataset.dueDate || (row.cells[6] ? row.cells[6].textContent.trim() : '');
+            const matchesCreatedDate = !createdDateValue || rowCreatedDate.includes(createdDateValue);
             const matchesDueDate = !dueDateValue || rowDueDate.includes(dueDateValue);
 
             // Show or Hide row based on filter results
-            if (matchesSearch && matchesStatus && matchesDueDate) {
+            if (matchesSearch && matchesModuleType && matchesStatus && matchesCreatedDate && matchesDueDate) {
                 row.style.display = '';
             } else {
                 row.style.display = 'none';
             }
         });
 
-        updateBulk();
+        if (typeof updateBulk === 'function') {
+            updateBulk();
+        }
     }
 
     function clearFilters() {
         document.getElementById('taskSearchInput').value = '';
         document.getElementById('statusFilter').value = 'ALL';
+        if (document.getElementById('createdDateFilter')) document.getElementById('createdDateFilter').value = '';
         document.getElementById('dueDateFilter').value = '';
         filterTasks();
     }
@@ -406,13 +438,13 @@
         }
     }
 
-    // 3. Change Status Dropdown Inline
+   
     async function changeStatus(selectElem, taskId) {
         const newStatus = selectElem.value;
         const previousStatus = selectElem.dataset.previousValue || 'Not Worked';
-
-        // Check if employee tries to change a task status to "In Progress" when another task is already active
-        if (newStatus === 'In Progress' || newStatus === 'InProgress') {
+        const currentUserType = "{{ request.session.user_type|default:''|lower }}";
+        const isEmployee = (currentUserType === 'employee');
+        if (isEmployee && newStatus === 'In Progress' || newStatus === 'InProgress') {
             let activeTaskName = null;
             document.querySelectorAll('#taskTableBody tr').forEach(r => {
                 const s = r.querySelector('.status-select');
@@ -422,13 +454,42 @@
             });
 
             if (activeTaskName) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Task Already In Progress',
-                    text: `Task "${activeTaskName}" is already In Progress.`,
-                    width: '380px',
-                    confirmButtonText: 'OK'
+                const requestedRow = document.getElementById(`row-${taskId}`);
+                const requestedTaskName = requestedRow?.querySelector('strong')?.textContent.trim() || 'this task';
+
+                const { value: formValues } = await Swal.fire({
+                    title: 'Request to Admin',
+                    html: `
+                        <div style="text-align: left; font-size: 14px; color: #334155;">
+                            <p style="margin-bottom: 8px;"><strong>Current Active Task:</strong> <span style="color: #2563eb;">${activeTaskName}</span></p>
+                            <p style="margin-bottom: 12px;"><strong>Requested Task:</strong> <span style="color: #0f172a;">${requestedTaskName}</span></p>
+                            <label for="swal-request-reason" style="font-weight: 600; display: block; margin-bottom: 6px; color: #475569;">Reason for Request:</label>
+                            <textarea id="swal-request-reason" class="swal2-textarea" style="width: 100%; margin: 0; height: 90px; box-sizing: border-box; resize: vertical; border-radius: 6px; padding: 8px; border: 1px solid #cbd5e1; font-size: 13px;" placeholder="Enter reason for requesting status change..."></textarea>
+                        </div>
+                    `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'Send Request',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#2563eb',
+                    cancelButtonColor: '#64748b',
+                    preConfirm: () => {
+                        const reason = document.getElementById('swal-request-reason')?.value || '';
+                        return { reason };
+                    }
                 });
+
+                if (formValues) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Request Sent',
+                        text: 'Your request to start this task has been sent to the Admin for approval.',
+                        width: '380px',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#2563eb'
+                    });
+                }
+
                 selectElem.value = previousStatus;
                 updateStatusClass(selectElem);
                 filterTasks();

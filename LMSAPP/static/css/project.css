@@ -45,6 +45,51 @@
 .btn-bulk-delete:hover {
     background-color: #dc2626;
 }
+
+/* Project Filter Bar Styling */
+.project-filters {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    background-color: #f8fafc;
+    padding: 14px 18px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+}
+
+.filter-input,
+.filter-select {
+    padding: 7px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #1e293b;
+    outline: none;
+    transition: all 0.2s ease;
+    background-color: #ffffff;
+}
+
+.filter-input:focus,
+.filter-select:focus {
+    border-color: #280ad3;
+    box-shadow: 0 0 0 3px rgba(40, 10, 211, 0.1);
+}
+
 .table-container {
     width: 100%;
     overflow-x: auto;

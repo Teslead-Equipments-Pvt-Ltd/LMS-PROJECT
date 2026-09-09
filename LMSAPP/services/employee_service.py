@@ -69,18 +69,29 @@ def add_employee_service(employee_id, username, role, password):
         """, [employee_id, username, role, hashed_pwd])
     return True
 
-def get_employee_tasks(username):
+
+def get_employee_tasks(username=None, employee_id=None):
     tasks_table()
-    like_pattern = f"%{username}%"
+
+    if employee_id and not username:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT username FROM users WHERE employee_id = %s LIMIT 1", [employee_id])
+            user_row = cursor.fetchone()
+            if user_row:
+                username = user_row[0]
+
+    if not username:
+        return []
+
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, task_name, project_name, created_date, due_date, status, employee_name 
+            SELECT id, task_name, project_name, created_date, due_date, status, employee_name
             FROM tasks 
-            WHERE FIND_IN_SET(%s, REPLACE(employee_name, ', ', ',')) OR employee_name LIKE %s 
+            WHERE FIND_IN_SET(%s, REPLACE(employee_name, ', ', ',')) > 0 OR employee_name = %s
             ORDER BY id ASC
-        """, [username, like_pattern])
+        """, [username, username])
         rows = cursor.fetchall()
-
+        
         tasks = []
         for index, row in enumerate(rows, start=1):
             tasks.append({
