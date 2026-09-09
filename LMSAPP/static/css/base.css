@@ -14,6 +14,10 @@ body {
 /* Sidebar Styling - Neat Left Aligned Layout */
 .sidebar {
     width: 240px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
     background-color: #0e0c2ef6;
     color: #ffffff;
     display: flex;
@@ -69,7 +73,7 @@ body {
     border-left: 3px solid transparent;
 }
 
-/* Small neat icon next to left-aligned text */
+
 .sidebar-menu li a .nav-icon {
     width: 16px;
     height: 16px;
