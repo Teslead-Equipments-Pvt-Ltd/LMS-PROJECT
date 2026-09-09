@@ -193,7 +193,7 @@
                     <option value="On Hold">On Hold</option>
                     <option value="Completed">Completed</option>
                 </select>
-            </div>
+            </div> -->
             <div class="modal-actions">
                 <button type="button" class="btn-modal-cancel" onclick="closeAdd()">Cancel</button>
                 <button type="submit" class="btn-modal-confirm">Save Task</button>
@@ -256,6 +256,7 @@
                 <label for="edit_due_date">Due Date<span class="required">*</span></label>
                 <input type="date" id="edit_due_date" required>
             </div>
+            <div class="form-group-modal" style="display: none;">
             <div class="form-group-modal" style="display: none;">
                 <label for="edit_status">Status</label>
                 <select id="edit_status" required onchange="handleEditModalStatusChange()">
@@ -413,7 +414,7 @@
         filterTasks();
     }
 
-    // 2. Select All Checkboxes (Only Visible Rows)
+
     function selectAll(headerCheckbox) {
         document.querySelectorAll('#taskTableBody tr:not([style*="display: none"]) .row-checkbox').forEach(cb => {
             cb.checked = headerCheckbox.checked;
@@ -716,7 +717,11 @@
         const editTaskId = document.getElementById('edit_task_id').value;
         const editStatus = document.getElementById('edit_status').value;
 
-        if (editStatus === 'In Progress' || editStatus === 'InProgress') {
+        const currentUserType = "{{ request.session.user_type|default:''|lower }}";
+        const currentUserRole = "{{ request.session.role|default:''|lower }}";
+        const isEmployee = (currentUserType === 'employee' || currentUserRole === 'employee');
+
+        if (isEmployee && (editStatus === 'In Progress' || editStatus === 'InProgress')) {
             let activeTaskName = null;
             document.querySelectorAll('#taskTableBody tr').forEach(row => {
                 const rowId = row.id ? row.id.replace('row-', '') : '';
