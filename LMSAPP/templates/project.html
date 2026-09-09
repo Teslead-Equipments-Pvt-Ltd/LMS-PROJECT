@@ -254,8 +254,76 @@
         return `${yyyy}-${mm}-${dd}`;
     }
 
+    function updateStatusClass(selectElem) {
+        selectElem.classList.remove('status-not-worked', 'status-in-progress', 'status-onhold', 'status-completed');
+        const val = selectElem.value;
+        if (val === 'Completed') {
+            selectElem.classList.add('status-completed');
+        } else if (val === 'In Progress' || val === 'InProgress') {
+            selectElem.classList.add('status-in-progress');
+        } else if (val === 'On Hold') {
+            selectElem.classList.add('status-onhold');
+        } else {
+            selectElem.classList.add('status-not-worked');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.status-select').forEach(updateStatusClass);
+    });
+
+    // Frontend Filter Projects Function
+    function filterProjects() {
+        const searchValue = document.getElementById('projectSearchInput').value.toLowerCase().trim();
+        const nameFilterValue = document.getElementById('projectNameFilter').value.toLowerCase().trim();
+        const typeValue = document.getElementById('projectTypeFilter').value;
+        const statusValue = document.getElementById('statusFilter').value;
+        const dueDateValue = document.getElementById('dueDateFilter').value;
+
+        const rows = document.querySelectorAll('#projectTableBody tr[data-id]');
+        
+        rows.forEach(row => {
+            const projName = row.querySelector('strong') ? row.querySelector('strong').textContent.toLowerCase().trim() : '';
+            const projType = row.dataset.type ? row.dataset.type.trim() : '';
+            const rowDueDate = row.dataset.dueDate || (row.cells[7] ? row.cells[7].textContent.trim() : '');
+
+            const selectElem = row.querySelector('.status-select');
+            const currentStatus = selectElem ? selectElem.value : '';
+
+            const matchesSearch = !searchValue ||
+
+                projName.includes(searchValue) ||
+                projType.toLowerCase().includes(searchValue) ||
+                currentStatus.toLowerCase().includes(searchValue) ||
+                rowDueDate.includes(searchValue);
+
+            const matchesName = !nameFilterValue || projName.includes(nameFilterValue);
+
+            const matchesType = (typeValue === 'ALL') || (projType === typeValue);
+
+            let matchesStatus = false;
+            if (statusValue === 'ALL') {
+                matchesStatus = true;
+            } else if (statusValue === 'In Progress') {
+                matchesStatus = (currentStatus === 'In Progress' || currentStatus === 'InProgress');
+            } else {
+                matchesStatus = (currentStatus === statusValue);
+            }
+
+
+            const matchesDueDate = !dueDateValue || rowDueDate.includes(dueDateValue);
+            if (matchesSearch && matchesName && matchesType && matchesStatus && matchesDueDate) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        updateBulkState();
+    }
+
     function toggleSelectAll(selectAllCheckbox) {
-        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = selectAllCheckbox.checked);
+        document.querySelectorAll('#projectTableBody tr:not([style*="display: none"]) .row-checkbox').forEach(cb => cb.checked = selectAllCheckbox.checked);
         updateBulkState();
     }
 
@@ -265,10 +333,12 @@
         document.getElementById('selectedCount').textContent = `(${selected.length})`;
         bulkBtn.style.display = selected.length > 0 ? 'inline-block' : 'none';
 
-        const total = document.querySelectorAll('.row-checkbox');
+        const visibleCheckboxes = document.querySelectorAll('#projectTableBody tr:not([style*="display: none"]) .row-checkbox');
         const selectAll = document.getElementById('selectAll');
-        if (selectAll && total.length > 0) {
-            selectAll.checked = (selected.length === total.length);
+        if (selectAll && visibleCheckboxes.length > 0) {
+            selectAll.checked = (selected.length === visibleCheckboxes.length);
+        } else if (selectAll) {
+            selectAll.checked = false;
         }
     }
 
