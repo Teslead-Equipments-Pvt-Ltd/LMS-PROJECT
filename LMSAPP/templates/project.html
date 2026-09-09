@@ -11,8 +11,45 @@
     <div class="project-header">
         <h2>Project</h2>
         <div class="header-actions">
-            <button class="btn-bulk-delete" id="bulkDeleteBtn" onclick="openBulkDeleteModal()">Bulk Delete <span id="selectedCount">(0)</span></button>
+            <button class="btn-bulk-delete" id="bulkDeleteBtn" onclick="openBulkDeleteModal()">Bulk Delete <span
+                    id="selectedCount">(0)</span></button>
             <button class="btn-add-project" onclick="openAddModal()">+ Add New Project</button>
+        </div>
+    </div>
+
+    <!-- Frontend Filter Section -->
+    <div class="project-filters">
+        <div class="filter-group">
+            <label for="projectSearchInput">Search:</label>
+            <input type="text" id="projectSearchInput" class="filter-input" placeholder="Search projects..."
+                oninput="filterProjects()">
+        </div>
+        <div class="filter-group">
+            <label for="projectNameFilter">Project Name:</label>
+            <input type="text" id="projectNameFilter" class="filter-input" placeholder="Project name..."
+                oninput="filterProjects()">
+        </div>
+        <div class="filter-group">
+            <label for="projectTypeFilter">Project Type:</label>
+            <select id="projectTypeFilter" class="filter-select" onchange="filterProjects()">
+                <option value="ALL">All Types</option>
+                <option value="Data Logger">Data Logger</option>
+                <option value="Internal Project">Internal Project</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="statusFilter">Status:</label>
+            <select id="statusFilter" class="filter-select" onchange="filterProjects()">
+                <option value="ALL">All Statuses</option>
+                <option value="Not Worked">Not Worked</option>
+                <option value="In Progress">In Progress</option>
+                <option value="On Hold">On Hold</option>
+                <option value="Completed">Completed</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="dueDateFilter">Due Date:</label>
+            <input type="date" id="dueDateFilter" class="filter-input" onchange="filterProjects()">
         </div>
     </div>
 
@@ -103,7 +140,7 @@
                     <option value="Internal Project">Internal Project</option>
                 </select>
             </div>
-            <div class="form-group-modal">
+            <div class="form-group-modal" style="display: none;">
                 <label for="new_status">Status</label>
                 <select id="new_status" required>
                     <option value="Not Worked">Not Worked</option>
@@ -142,7 +179,7 @@
                     <option value="Internal Project">Internal Project</option>
                 </select>
             </div>
-            <div class="form-group-modal">
+            <div class="form-group-modal" style="display: none;">
                 <label for="edit_status">Status</label>
                 <select id="edit_status" required onchange="handleEditModalStatusChange()">
                     <option value="Not Worked">Not Worked</option>
@@ -217,26 +254,98 @@
         return `${yyyy}-${mm}-${dd}`;
     }
 
+    function updateStatusClass(selectElem) {
+        selectElem.classList.remove('status-not-worked', 'status-in-progress', 'status-onhold', 'status-completed');
+        const val = selectElem.value;
+        if (val === 'Completed') {
+            selectElem.classList.add('status-completed');
+        } else if (val === 'In Progress' || val === 'InProgress') {
+            selectElem.classList.add('status-in-progress');
+        } else if (val === 'On Hold') {
+            selectElem.classList.add('status-onhold');
+        } else {
+            selectElem.classList.add('status-not-worked');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.status-select').forEach(updateStatusClass);
+    });
+
+    // Frontend Filter Projects Function
+    function filterProjects() {
+        const searchValue = document.getElementById('projectSearchInput').value.toLowerCase().trim();
+        const nameFilterValue = document.getElementById('projectNameFilter').value.toLowerCase().trim();
+        const typeValue = document.getElementById('projectTypeFilter').value;
+        const statusValue = document.getElementById('statusFilter').value;
+        const dueDateValue = document.getElementById('dueDateFilter').value;
+
+        const rows = document.querySelectorAll('#projectTableBody tr[data-id]');
+        
+        rows.forEach(row => {
+            const projName = row.querySelector('strong') ? row.querySelector('strong').textContent.toLowerCase().trim() : '';
+            const projType = row.dataset.type ? row.dataset.type.trim() : '';
+            const rowDueDate = row.dataset.dueDate || (row.cells[7] ? row.cells[7].textContent.trim() : '');
+
+            const selectElem = row.querySelector('.status-select');
+            const currentStatus = selectElem ? selectElem.value : '';
+
+            const matchesSearch = !searchValue ||
+
+                projName.includes(searchValue) ||
+                projType.toLowerCase().includes(searchValue) ||
+                currentStatus.toLowerCase().includes(searchValue) ||
+                rowDueDate.includes(searchValue);
+
+            const matchesName = !nameFilterValue || projName.includes(nameFilterValue);
+
+            const matchesType = (typeValue === 'ALL') || (projType === typeValue);
+
+            let matchesStatus = false;
+            if (statusValue === 'ALL') {
+                matchesStatus = true;
+            } else if (statusValue === 'In Progress') {
+                matchesStatus = (currentStatus === 'In Progress' || currentStatus === 'InProgress');
+            } else {
+                matchesStatus = (currentStatus === statusValue);
+            }
+
+
+            const matchesDueDate = !dueDateValue || rowDueDate.includes(dueDateValue);
+            if (matchesSearch && matchesName && matchesType && matchesStatus && matchesDueDate) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        updateBulkState();
+    }
+
     function toggleSelectAll(selectAllCheckbox) {
-        document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = selectAllCheckbox.checked);
+        document.querySelectorAll('#projectTableBody tr:not([style*="display: none"]) .row-checkbox').forEach(cb => cb.checked = selectAllCheckbox.checked);
         updateBulkState();
     }
 
     function updateBulkState() {
-        const selected = document.querySelectorAll('.row-checkbox:checked');
+        const selected = document.querySelectorAll('#projectTableBody tr:not([style*="display: none"]) .row-checkbox:checked');
         const bulkBtn = document.getElementById('bulkDeleteBtn');
         document.getElementById('selectedCount').textContent = `(${selected.length})`;
         bulkBtn.style.display = selected.length > 0 ? 'inline-block' : 'none';
 
-        const total = document.querySelectorAll('.row-checkbox');
+        const visibleCheckboxes = document.querySelectorAll('#projectTableBody tr:not([style*="display: none"]) .row-checkbox');
         const selectAll = document.getElementById('selectAll');
-        if (selectAll && total.length > 0) {
-            selectAll.checked = (selected.length === total.length);
+        if (selectAll && visibleCheckboxes.length > 0) {
+            selectAll.checked = (selected.length === visibleCheckboxes.length);
+        } else if (selectAll) {
+            selectAll.checked = false;
         }
     }
 
 
     async function handleInlineStatusChange(selectElem, projectId) {
+        updateStatusClass(selectElem);
+        filterProjects();
         const row = document.getElementById(`row-${projectId}`);
         if (!row) return;
 
@@ -342,11 +451,11 @@
                 closeEditModal();
                 // openEditSuccessModal(`Project "${editProjectData.project_name}" updated successfully!`);
                 await Swal.fire({
-                    icon:'success',
-                    title:'Success',
-                    width:'350px',
-                    text:'Project Updated Successfully',
-                    confirmButtonText:'OK'
+                    icon: 'success',
+                    title: 'Success',
+                    width: '350px',
+                    text: 'Project Updated Successfully',
+                    confirmButtonText: 'OK'
                 })
                 window.location.reload();
             } else {
@@ -369,14 +478,14 @@
         // document.getElementById('singleDeleteModal').style.display = 'flex';
         // document.getElementById('confirmSingleDeleteBtn').onclick = submitSingleDelete;
         Swal.fire({
-            icon:'question',
-            title:'Are you sure want to delete this project?',
-            width:'350px',
-            showCancelButton:'true',
-            confirmButtonText:'Yes,Delete it!',
-            cancelButtonText:'Cancel'
-        }).then(function(result){
-            if(result.isConfirmed){
+            icon: 'question',
+            title: 'Are you sure want to delete this project?',
+            width: '350px',
+            showCancelButton: 'true',
+            confirmButtonText: 'Yes,Delete it!',
+            cancelButtonText: 'Cancel'
+        }).then(function (result) {
+            if (result.isConfirmed) {
                 submitSingleDelete();
             }
         })
@@ -435,7 +544,7 @@
     async function submitBulkDelete() {
         const checkboxes = document.querySelectorAll('.row-checkbox:checked');
         let count = [];
-        checkboxes.forEach(function(checkbox) {
+        checkboxes.forEach(function (checkbox) {
             count.push(parseInt(checkbox.value));
         });
 
@@ -511,28 +620,28 @@
             if (response.ok && data.status === 'success') {
                 closeAddModal();
                 await Swal.fire({
-                    icon:'success',
-                    title:'Success',
-                    width:'350px',
-                    text:'Project Added Successfully',
-                    confirmButtonText:'OK'
+                    icon: 'success',
+                    title: 'Success',
+                    width: '350px',
+                    text: 'Project Added Successfully',
+                    confirmButtonText: 'OK'
                 })
                 window.location.reload();
             } else {
                 Swal.fire({
-                    icon:'error',
-                    title:'Error!',
-                    text:data.message || 'Failed to add project.',
-                    confirmButtonText:'OK'
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to add project.',
+                    confirmButtonText: 'OK'
                 })
             }
         } catch (err) {
             Swal.fire({
-                icon:'error',
-                title:'Error!',
-                text:'Network Error while adding the project',
-                confirmButtonText:'OK',
-                width:'350px'
+                icon: 'error',
+                title: 'Error!',
+                text: 'Network Error while adding the project',
+                confirmButtonText: 'OK',
+                width: '350px'
             })
         }
     }

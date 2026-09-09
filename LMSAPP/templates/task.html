@@ -171,7 +171,7 @@
                 <label for="new_due_date">Due Date<span class="required">*</span></label>
                 <input type="date" id="new_due_date" required>
             </div>
-            <div class="form-group-modal">
+            <!-- <div class="form-group-modal">
                 <label for="new_status">Status</label>
                 <select id="new_status" required>
                     <option value="Not Worked">Not Worked</option>
@@ -179,7 +179,7 @@
                     <option value="On Hold">On Hold</option>
                     <option value="Completed">Completed</option>
                 </select>
-            </div>
+            </div> -->
             <div class="modal-actions">
                 <button type="button" class="btn-modal-cancel" onclick="closeAdd()">Cancel</button>
                 <button type="submit" class="btn-modal-confirm">Save Task</button>
@@ -213,8 +213,7 @@
                         <ul class="project-item-list" id="editProjectList">
                             {% for proj in projects %}
                             <li class="project-item"
-                                onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{
-                                proj.project_name }}</li>
+                                onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
                             {% empty %}
                             <li class="project-item-empty">No projects found</li>
                             {% endfor %}
@@ -244,7 +243,7 @@
                 <label for="edit_due_date">Due Date<span class="required">*</span></label>
                 <input type="date" id="edit_due_date" required>
             </div>
-            <div class="form-group-modal">
+            <div class="form-group-modal" style="display: none;">
                 <label for="edit_status">Status</label>
                 <select id="edit_status" required onchange="handleEditModalStatusChange()">
                     <option value="Not Worked">Not Worked</option>
@@ -333,7 +332,7 @@
     function filterTasks() {
         const searchValue = document.getElementById('taskSearchInput').value.toLowerCase().trim();
         const statusValue = document.getElementById('statusFilter').value;
-        const dueDateValue = document.getElementById('dueDateFilter').value; // format: YYYY-MM-DD
+        const dueDateValue = document.getElementById('dueDateFilter').value; 
 
         const rows = document.querySelectorAll('#taskTableBody tr[data-id]');
 
@@ -381,7 +380,7 @@
         filterTasks();
     }
 
-    // 2. Select All Checkboxes (Only Visible Rows)
+
     function selectAll(headerCheckbox) {
         document.querySelectorAll('#taskTableBody tr:not([style*="display: none"]) .row-checkbox').forEach(cb => {
             cb.checked = headerCheckbox.checked;
@@ -409,10 +408,13 @@
     // 3. Change Status Dropdown Inline
     async function changeStatus(selectElem, taskId) {
         const newStatus = selectElem.value;
-        const previousStatus = selectElem.dataset.previousValue || 'Not Worked';
+        const previousStatus = selectElem.previousValue || 'Not Worked';
 
-        // Check if employee tries to change a task status to "In Progress" when another task is already active
-        if (newStatus === 'In Progress' || newStatus === 'InProgress') {
+        const currentUserType = "{{ request.session.user_type|default:''|lower }}";
+        const isEmployee = (currentUserType === 'employee');
+        let requestDescription = '';
+
+        if (isEmployee && (newStatus === 'In Progress' || newStatus === 'InProgress')) {
             let activeTaskName = null;
             document.querySelectorAll('#taskTableBody tr').forEach(r => {
                 const s = r.querySelector('.status-select');
@@ -422,17 +424,42 @@
             });
 
             if (activeTaskName) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Task Already In Progress',
-                    text: `Task "${activeTaskName}" is already In Progress.`,
-                    width: '380px',
-                    confirmButtonText: 'OK'
+                const { value: description, isConfirmed } = await Swal.fire({
+                    title: ' Request Admin',
+                    text: `Task "${activeTaskName}" is already In Progress. Please enter a description/reason to request Admin approval:`,
+                    input: 'textarea',
+                    inputPlaceholder: 'Type your reason/description for admin...',
+                    inputAttributes: {
+                        'aria-label': 'Type your reason for admin',
+                        'width': '500px',
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Send Request to Admin',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#3b82f6',
+                    cancelButtonColor: '#94a3b8',
+                    inputValidator: (value) => {
+                        if (!value || !value.trim()) {
+                            return 'Description is required!';
+                        }
+                    }
                 });
-                selectElem.value = previousStatus;
-                updateStatusClass(selectElem);
-                filterTasks();
-                return;
+
+                if (!isConfirmed || !description) {
+                    selectElem.value = previousStatus;
+                    updateStatusClass(selectElem);
+                    filterTasks();
+                    return;
+                }
+                requestDescription = description;
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Request Sent',
+                    text: 'Your request has been submitted to Admin.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             }
         }
 
@@ -655,7 +682,11 @@
         const editTaskId = document.getElementById('edit_task_id').value;
         const editStatus = document.getElementById('edit_status').value;
 
-        if (editStatus === 'In Progress' || editStatus === 'InProgress') {
+        const currentUserType = "{{ request.session.user_type|default:''|lower }}";
+        const currentUserRole = "{{ request.session.role|default:''|lower }}";
+        const isEmployee = (currentUserType === 'employee' || currentUserRole === 'employee');
+
+        if (isEmployee && (editStatus === 'In Progress' || editStatus === 'InProgress')) {
             let activeTaskName = null;
             document.querySelectorAll('#taskTableBody tr').forEach(row => {
                 const rowId = row.id ? row.id.replace('row-', '') : '';
