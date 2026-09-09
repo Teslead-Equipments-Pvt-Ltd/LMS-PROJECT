@@ -94,46 +94,7 @@ def update_task_service(task_id, task_name, project_name, due_date, status, empl
             WHERE id = %s
         """, [task_name, project_name, created_date, due_date, status, employee_name, task_id])
 
-    # 3. Check who made the change (Admin or Employee)
-    if user_role in ['ADMIN', 'SUPER_ADMIN']:
-        changed_by = "Admin"
-    else:
-        changed_by = updated_by or employee_name
 
-    current_status = (status or "").lower()
-
-    # 4. If status is Completed -> Notify ONLY Admin
-    if current_status == 'completed':
-        create_notification_service(
-            recipient='Admin',
-            title=f"Task Completed: {task_name}",
-            message=f"{changed_by} has completed the task",
-            notification_type='task_completed',
-            reference_id=task_id
-        )
-
-    # 5. If status is On Hold or Pending -> Notify BOTH Admin and Employee
-    elif current_status in ['on hold', 'hold', 'pending']:
-        status_text = "on hold"
-
-        # (a) Send notification to Admin
-        create_notification_service(
-            recipient='Admin',
-            title=f"Task {status_text}: {task_name}",
-            message=f"{changed_by} has put the task {status_text}",
-            notification_type=f"task_{current_status.replace(' ', '_')}",
-            reference_id=task_id
-        )
-
-        # (b) Send notification to Employee
-        if employee_name and employee_name != 'Admin':
-            create_notification_service(
-                recipient=employee_name,
-                title=f"Task {status_text}: {task_name}",
-                message=f"{changed_by} has put the task {status_text}",
-                notification_type=f"task_{current_status.replace(' ', '_')}",
-                reference_id=task_id
-            )
 
     return True
 
