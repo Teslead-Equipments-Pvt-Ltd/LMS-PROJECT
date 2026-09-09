@@ -1,10 +1,10 @@
 from django.contrib import admin
-import json
 import datetime
 from django.db import connection
 from LMSAPP.services.notification_service import create_notification_service
 
 def tasks_table():
+    
     with connection.cursor() as cursor:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS tasks (
@@ -15,7 +15,6 @@ def tasks_table():
                 due_date VARCHAR(50) DEFAULT NULL,
                 status VARCHAR(50) NOT NULL DEFAULT 'Not Worked',
                 employee_name VARCHAR(200) DEFAULT NULL,
-                employee_status TEXT DEFAULT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """)
@@ -27,61 +26,20 @@ def tasks_table():
             cursor.execute("ALTER TABLE tasks ADD COLUMN created_date VARCHAR(50) DEFAULT NULL;")
         except Exception:
             pass
-        try:
-            cursor.execute("ALTER TABLE tasks ADD COLUMN employee_status TEXT DEFAULT NULL;")
-        except Exception:
-            pass
 
-def calculate_overall_status(emp_status_dict):
-    if not emp_status_dict:
-        return 'Not Worked'
-    statuses = [str(v).strip() for v in emp_status_dict.values()]
-    # If all assigned employees marked Completed -> Completed
-    if all(s.lower() == 'completed' for s in statuses):
-        return 'Completed'
-    # If any is In Progress -> In Progress
-    if any(s.lower() in ['in progress', 'inprogress'] for s in statuses):
-        return 'In Progress'
-    # If any is On Hold -> On Hold
-    if any(s.lower() in ['on hold', 'onhold'] for s in statuses):
-        return 'On Hold'
-    return 'Not Worked'
-
-def parse_employee_status(employee_name, employee_status_raw, default_status='Not Worked'):
-    emp_list = [e.strip() for e in (employee_name or '').split(',') if e.strip()]
-    emp_status_dict = {}
-    if employee_status_raw:
-        try:
-            if isinstance(employee_status_raw, dict):
-                emp_status_dict = employee_status_raw
-            else:
-                emp_status_dict = json.loads(employee_status_raw)
-        except Exception:
-            emp_status_dict = {}
-    
-    final_dict = {}
-    for emp in emp_list:
-        final_dict[emp] = emp_status_dict.get(emp, default_status)
-    return final_dict
 
 def get_all_tasks_service():
+    
     tasks_table()
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, task_name, project_name, created_date, due_date, status, employee_name, employee_status
+            SELECT id, task_name, project_name, created_date, due_date, status, employee_name
             FROM tasks ORDER BY id ASC
         """)
         rows = cursor.fetchall()
         
     tasks = []
     for index, row in enumerate(rows, start=1):
-        emp_name = row[6]
-        raw_emp_status = row[7]
-        overall_status_db = row[5]
-        
-        emp_status_dict = parse_employee_status(emp_name, raw_emp_status, default_status=overall_status_db or 'Not Worked')
-        computed_overall_status = calculate_overall_status(emp_status_dict) if emp_status_dict else (overall_status_db or 'Not Worked')
-        
         tasks.append({
             's_no': index,
             'id': row[0],
@@ -89,24 +47,17 @@ def get_all_tasks_service():
             'project_name': row[2],
             'created_date': row[3],
             'due_date': row[4],
-            'status': computed_overall_status,
-            'employee_name': emp_name,
-            'employee_status': emp_status_dict,
-            'employee_status_json': json.dumps(emp_status_dict),
+            'status': row[5],
+            'employee_name': row[6],
         })
     return tasks
 
-def add_task_service(task_name, project_name, due_date, status, employee_name, created_date=None):
-    tasks_table()
-    emp_status_dict = parse_employee_status(employee_name, {}, default_status=status or 'Not Worked')
-    overall_status = calculate_overall_status(emp_status_dict) if emp_status_dict else (status or 'Not Worked')
-    emp_status_json = json.dumps(emp_status_dict)
-
+def add_task_service(task_name, project_name, due_date, status, employee_name,created_date=None):
     with connection.cursor() as cursor:
         cursor.execute("""
-            INSERT INTO tasks (task_name, project_name, due_date, status, employee_name, created_date, employee_status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, [task_name, project_name, due_date, overall_status, employee_name, created_date, emp_status_json])
+            INSERT INTO tasks (task_name, project_name, due_date, status, employee_name,created_date)
+            VALUES (%s, %s, %s, %s, %s,%s)
+        """, [task_name, project_name, due_date, status, employee_name,created_date])
         task_id = cursor.lastrowid
 
     # 1. Notify assigned employee
@@ -129,11 +80,13 @@ def add_task_service(task_name, project_name, due_date, status, employee_name, c
     )
 
     return True
-def update_task_service(task_id, task_name, project_name, due_date, status, employee_name, created_date=None):
-    today_str = datetime.date.today().strftime("%Y-%m-%d")
+
+def update_task_service(task_id, task_name, project_name, due_date, status, employee_name, created_date=None, updated_by=None, user_role=None):
+    # 1. Set today's date if task moved to In Progress
     if status == "In Progress" and not created_date:
-        created_date = today_str
-    
+        created_date = datetime.date.today().strftime("%Y-%m-%d")
+
+    # 2. Update task details in the database
     with connection.cursor() as cursor:
         cursor.execute("""
             UPDATE tasks
@@ -141,67 +94,59 @@ def update_task_service(task_id, task_name, project_name, due_date, status, empl
             WHERE id = %s
         """, [task_name, project_name, created_date, due_date, status, employee_name, task_id])
 
-        if status.lower() == 'completed' :
-            cursor.execute("SELECT employee_name, task_name FROM tasks WHERE id = %s", [task_id])
-            row = cursor.fetchone()
-            if row:
-                employee_name = row[0]
-                task_name = row[1]
-                create_notification_service(
-                    recipient=employee_name,
-                    title=f"Task Completed: {task_name}",
-                    message=f"{employee_name} has completed the task",
-                    notification_type='task_completed',
-                    reference_id=task_id
-                )
+    # 3. Check who made the change (Admin or Employee)
+    if user_role in ['ADMIN', 'SUPER_ADMIN']:
+        changed_by = "Admin"
+    else:
+        changed_by = updated_by or employee_name
 
-    return True
+    current_status = (status or "").lower()
 
-def update_employee_task_status_service(task_id, username, new_status):
-    today_str = datetime.date.today().strftime("%Y-%m-%d")
-    tasks_table()
+    # 4. If status is Completed -> Notify ONLY Admin
+    if current_status == 'completed':
+        create_notification_service(
+            recipient='Admin',
+            title=f"Task Completed: {task_name}",
+            message=f"{changed_by} has completed the task",
+            notification_type='task_completed',
+            reference_id=task_id
+        )
 
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT task_name, project_name, due_date, created_date, status, employee_name, employee_status FROM tasks WHERE id = %s", [task_id])
-        row = cursor.fetchone()
-        if not row:
-            return False, "Task not found"
+    # 5. If status is On Hold or Pending -> Notify BOTH Admin and Employee
+    elif current_status in ['on hold', 'hold', 'pending']:
+        status_text = "on hold"
 
-        task_name, project_name, due_date, created_date, current_overall_status, employee_name, employee_status_raw = row
-        emp_status_dict = parse_employee_status(employee_name, employee_status_raw, default_status=current_overall_status)
+        # (a) Send notification to Admin
+        create_notification_service(
+            recipient='Admin',
+            title=f"Task {status_text}: {task_name}",
+            message=f"{changed_by} has put the task {status_text}",
+            notification_type=f"task_{current_status.replace(' ', '_')}",
+            reference_id=task_id
+        )
 
-        emp_status_dict[username] = new_status
-
-        overall_status = calculate_overall_status(emp_status_dict)
-
-        if (overall_status == "In Progress" or new_status == "In Progress") and not created_date:
-            created_date = today_str
-
-        emp_status_json = json.dumps(emp_status_dict)
-
-        cursor.execute("""
-            UPDATE tasks
-            SET status = %s, created_date = %s, employee_status = %s
-            WHERE id = %s
-        """, [overall_status, created_date, emp_status_json, task_id])
-
-        if overall_status.lower() == 'completed':
+        # (b) Send notification to Employee
+        if employee_name and employee_name != 'Admin':
             create_notification_service(
-                recipient='Admin',
-                title=f"Task Completed: {task_name}",
-                message=f"All assigned employees completed task '{task_name}'.",
-                notification_type='task_completed',
+                recipient=employee_name,
+                title=f"Task {status_text}: {task_name}",
+                message=f"{changed_by} has put the task {status_text}",
+                notification_type=f"task_{current_status.replace(' ', '_')}",
                 reference_id=task_id
             )
 
-        return True, overall_status
+    return True
+
 
 def delete_task_service(task_id):
+    
+   
     with connection.cursor() as cursor:
         cursor.execute("DELETE FROM tasks WHERE id = %s", [task_id])
     return True
 
 def bulk_delete_tasks_service(task_ids):
+
     if not task_ids:
         return True
     tasks_table()
@@ -209,4 +154,3 @@ def bulk_delete_tasks_service(task_ids):
     with connection.cursor() as cursor:
         cursor.execute(f"DELETE FROM tasks WHERE id IN ({format_strings})", task_ids)
     return True
-
