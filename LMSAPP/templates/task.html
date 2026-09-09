@@ -97,7 +97,7 @@
                     <td>
                         <select
                             class="status-select status-{% if task.status == 'Completed' %}completed{% elif task.status == 'In Progress' or task.status == 'InProgress' %}in-progress{% elif task.status == 'On Hold' %}onhold{% else %}not-worked{% endif %}"
-                            onchange="changeStatus(this, {{ task.id }})">
+                            onchange="changeStatus(this, {{ task.id }})" {% if request.session.user_type|lower == "employee" or request.session.role|lower == "employee" %}{% if task.status == "Completed" %}disabled{% endif %}{% endif %}>
                             <option value="Not Worked" class="opt-not-worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
                             <option value="In Progress" class="opt-in-progress" {% if task.status == "In Progress" or task.status == "InProgress" %}selected{% endif %}>InProgress</option>
                             <option value="On Hold" class="opt-onhold" {% if task.status == "On Hold" %}selected{% endif %}>On Hold</option>
@@ -156,7 +156,8 @@
                         <ul class="project-item-list" id="addProjectList">
                             {% for proj in projects %}
                             <li class="project-item"
-                                onclick="selectProjectItem('add', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
+                                onclick="selectProjectItem('add', '{{ proj.project_name|escapejs }}')">{{
+                                proj.project_name }}</li>
                             {% empty %}
                             <li class="project-item-empty">No projects found</li>
                             {% endfor %}
@@ -446,8 +447,23 @@
         const newStatus = selectElem.value;
         const previousStatus = selectElem.dataset.previousValue || 'Not Worked';
         const currentUserType = "{{ request.session.user_type|default:''|lower }}";
-        const isEmployee = (currentUserType === 'employee');
-        if (isEmployee && newStatus === 'In Progress' || newStatus === 'InProgress') {
+        const currentUserRole = "{{ request.session.role|default:''|lower }}";
+        const isEmployee = (currentUserType === 'employee' || currentUserRole === 'employee');
+
+        if (isEmployee && previousStatus === 'Completed') {
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Status Locked',
+                text: 'Completed tasks are locked and can only be changed by Admin.',
+                confirmButtonColor: '#2563eb'
+            });
+            selectElem.value = previousStatus;
+            updateStatusClass(selectElem);
+            filterTasks();
+            return;
+        }
+
+        if (isEmployee && (newStatus === 'In Progress' || newStatus === 'InProgress')) {
             let activeTaskName = null;
             document.querySelectorAll('#taskTableBody tr').forEach(r => {
                 const s = r.querySelector('.status-select');
@@ -529,7 +545,7 @@
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
         try {
-            await fetch('/api/tasks/update/', {
+            const response = await fetch('/api/tasks/update/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
                 body: JSON.stringify({
@@ -542,6 +558,23 @@
                     status: newStatus
                 })
             });
+            const resData = await response.json();
+            if (resData.status === 'success') {
+                if (isEmployee && newStatus === 'Completed') {
+                    selectElem.disabled = true;
+                }
+            } else {
+                selectElem.value = previousStatus;
+                selectElem.dataset.previousValue = previousStatus;
+                updateStatusClass(selectElem);
+                filterTasks();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Update Failed',
+                    text: resData.message || 'Could not update task status.',
+                    confirmButtonColor: '#2563eb'
+                });
+            }
         } catch (err) {
             console.error('Task status update error:', err);
         }
@@ -716,36 +749,36 @@
             return;
         }
 
-        const editTaskId = document.getElementById('edit_task_id').value;
-        const editStatus = document.getElementById('edit_status').value;
+        // const editTaskId = document.getElementById('edit_task_id').value;
+        // const editStatus = document.getElementById('edit_status').value;
 
-        const currentUserType = "{{ request.session.user_type|default:''|lower }}";
-        const currentUserRole = "{{ request.session.role|default:''|lower }}";
-        const isEmployee = (currentUserType === 'employee' || currentUserRole === 'employee');
+        // const currentUserType = "{{ request.session.user_type|default:''|lower }}";
+        // const currentUserRole = "{{ request.session.role|default:''|lower }}";
+        // const isEmployee = (currentUserType === 'employee' || currentUserRole === 'employee');
 
-        if (isEmployee && (editStatus === 'In Progress' || editStatus === 'InProgress')) {
-            let activeTaskName = null;
-            document.querySelectorAll('#taskTableBody tr').forEach(row => {
-                const rowId = row.id ? row.id.replace('row-', '') : '';
-                if (rowId && rowId !== editTaskId) {
-                    const select = row.querySelector('.status-select');
-                    if (select && (select.value === 'In Progress' || select.value === 'InProgress')) {
-                        activeTaskName = row.querySelector('strong')?.textContent.trim() || 'another task';
-                    }
-                }
-            });
+        // if (isEmployee && (editStatus === 'In Progress' || editStatus === 'InProgress')) {
+        //     let activeTaskName = null;
+        //     document.querySelectorAll('#taskTableBody tr').forEach(row => {
+        //         const rowId = row.id ? row.id.replace('row-', '') : '';
+        //         if (rowId && rowId !== editTaskId) {
+        //             const select = row.querySelector('.status-select');
+        //             if (select && (select.value === 'In Progress' || select.value === 'InProgress')) {
+        //                 activeTaskName = row.querySelector('strong')?.textContent.trim() || 'another task';
+        //             }
+        //         }
+        //     });
 
-            if (activeTaskName) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Task Already In Progress',
-                    text: `Task "${activeTaskName}" is already In Progress.`,
-                    width: '380px',
-                    confirmButtonText: 'OK'
-                });
-                return;
-            }
-        }
+        //     if (activeTaskName) {
+        //         Swal.fire({
+        //             icon: 'warning',
+        //             title: 'Task Already In Progress',
+        //             text: `Task "${activeTaskName}" is already In Progress.`,
+        //             width: '380px',
+        //             confirmButtonText: 'OK'
+        //         });
+        //         return;
+        //     }
+        // }
 
         const tasks = {
             id: document.getElementById('edit_task_id').value,

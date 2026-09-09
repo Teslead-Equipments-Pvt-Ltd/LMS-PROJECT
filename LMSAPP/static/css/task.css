@@ -228,6 +228,12 @@
     box-shadow: 0 0 0 2px rgba(40, 10, 211, 0.2);
 }
 
+.status-select:disabled {
+    cursor: not-allowed;
+    opacity: 0.75;
+    background-color: #f1f5f9;
+}
+
 /* Text Action Buttons */
 .action-btn-container {
     display: flex;

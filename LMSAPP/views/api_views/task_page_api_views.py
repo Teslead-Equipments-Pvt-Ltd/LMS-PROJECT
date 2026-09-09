@@ -1,4 +1,5 @@
 import json
+from django.db import connection
 from django.http import JsonResponse
 from LMSAPP.services.task_service import (
     get_all_tasks_service,
@@ -55,7 +56,16 @@ def update_task_api(request):
             return JsonResponse({'status': 'error', 'message': 'Task ID is required.'}, status=400)
 
         updated_by = request.session.get('user_name') or 'Admin'
-        user_role = request.session.get('role', '')
+        user_role = str(request.session.get('role', '')).lower()
+        user_type = str(request.session.get('user_type', '')).lower()
+
+        if user_role == 'employee' or user_type == 'employee':
+            # from django.db import connection
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT status FROM tasks WHERE id = %s", [task_id])
+                row = cursor.fetchone()
+                if row and row[0] == 'Completed':
+                    return JsonResponse({'status': 'error', 'message': 'Completed tasks are only changed by Admin.'}, status=400)
 
         # 1. Update task details in DB
         update_task_service(
