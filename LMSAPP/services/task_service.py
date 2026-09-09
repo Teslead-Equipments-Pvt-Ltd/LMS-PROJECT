@@ -129,56 +129,17 @@ def add_task_service(task_name, project_name, due_date, status, employee_name, c
     )
 
     return True
-
-def update_task_service(task_id, task_name, project_name, due_date, status, employee_name, created_date=None, updating_employee=None):
+def update_task_service(task_id, task_name, project_name, due_date, status, employee_name, created_date=None, **kwargs):
     today_str = datetime.date.today().strftime("%Y-%m-%d")
-    tasks_table()
-
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT employee_status, status, created_date FROM tasks WHERE id = %s", [task_id])
-        row = cursor.fetchone()
-        existing_emp_status_raw = row[0] if row else None
-        existing_status_db = row[1] if row else 'Not Worked'
-        db_created_date = row[2] if row else None
-
-    emp_status_dict = parse_employee_status(employee_name, existing_emp_status_raw, default_status=existing_status_db)
-    
-    if updating_employee and updating_employee in emp_status_dict:
-        emp_status_dict[updating_employee] = status
-    elif not updating_employee and status:
-        # If Admin explicitly selected a status, apply to employees
-        for emp in emp_status_dict:
-            emp_status_dict[emp] = status
-
-    overall_status = calculate_overall_status(emp_status_dict) if emp_status_dict else (status or 'Not Worked')
-    
-    if (overall_status == "In Progress" or status == "In Progress") and not created_date and not db_created_date:
+    if status == "In Progress" and not created_date:
         created_date = today_str
-    elif not created_date:
-        created_date = db_created_date
-
-    emp_status_json = json.dumps(emp_status_dict)
-
+    
     with connection.cursor() as cursor:
         cursor.execute("""
             UPDATE tasks
-            SET task_name = %s, project_name = %s, created_date = %s, due_date = %s, status = %s, employee_name = %s, employee_status = %s
+            SET task_name = %s, project_name = %s, created_date = %s, due_date = %s, status = %s, employee_name = %s
             WHERE id = %s
-        """, [task_name, project_name, created_date, due_date, overall_status, employee_name, emp_status_json, task_id])
-
-        if overall_status.lower() == 'completed':
-            cursor.execute("SELECT employee_name, task_name FROM tasks WHERE id = %s", [task_id])
-            row = cursor.fetchone()
-            if row:
-                emp_name = row[0]
-                t_name = row[1]
-                create_notification_service(
-                    recipient=emp_name,
-                    title=f"Task Completed: {t_name}",
-                    message=f"Task '{t_name}' has been completed by all assigned employees.",
-                    notification_type='task_completed',
-                    reference_id=task_id
-                )
+        """, [task_name, project_name, created_date, due_date, status, employee_name, task_id])
 
     return True
 
