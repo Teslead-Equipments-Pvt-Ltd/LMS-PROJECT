@@ -12,6 +12,7 @@ page_patterns = [
     path('',include('LMSAPP.urls.page_urls.employee_page_urls')),
     path('',include('LMSAPP.urls.page_urls.dashboard_page_urls')),
     path('',include('LMSAPP.urls.page_urls.notification_page_urls')),
+    path('', include('LMSAPP.urls.page_urls.task_request_page_urls')),
 ]
 
 # API URLS
@@ -20,6 +21,7 @@ api_patterns = [
     path('', include('LMSAPP.urls.api_urls.project_api_urls')),
     path('', include('LMSAPP.urls.api_urls.task_api_urls')),
     path('', include('LMSAPP.urls.api_urls.employee_api_urls')),
+    # path('', include('LMSAPP.urls.api_urls.task_request_api_urls')),
     # path('', include('LMSAPP.urls.api_urls.notification_api_urls')),
 ]
 

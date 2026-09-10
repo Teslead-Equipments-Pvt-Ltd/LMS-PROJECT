@@ -48,35 +48,53 @@ def get_request_status_by_id(request_id):
 def get_notifications_by_user(recipient=None, is_admin=False):
     """
     Fetches all notifications for Admin or for a specific employee.
+    Deduplicates task_request notifications so that each task shows only once.
     """
     ensure_notifications_table()
 
     # Step 1: Decide who we are fetching notifications for
     target_user = 'Admin' if is_admin else recipient
 
-    # Step 2: Run a simple SELECT query from the notifications table
+    # Step 2: Fetch notifications with joined task_requests to get task_id and current status
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, recipient, title, message, notification_type, reference_id, is_read, created_at
-            FROM notifications
-            WHERE recipient = %s
-            ORDER BY created_at DESC
+            SELECT 
+                n.id, 
+                n.recipient, 
+                n.title, 
+                n.message, 
+                n.notification_type, 
+                n.reference_id, 
+                n.is_read, 
+                n.created_at,
+                tr.task_id,
+                tr.status AS request_status
+            FROM notifications n
+            LEFT JOIN task_requests tr ON n.notification_type = 'task_request' AND n.reference_id = tr.id
+            WHERE n.recipient = %s
+            ORDER BY n.created_at DESC
         """, [target_user])
         rows = cursor.fetchall()
 
-    # Step 3: Loop through each row and build a clean dictionary
+    # Step 3: Loop through each row and deduplicate task_request notifications for the same task
     notifications = []
-    for index, row in enumerate(rows, start=1):
+    seen_task_request_tasks = set()
+
+    for row in rows:
         notif_type = row[4]
         ref_id = row[5]
+        task_id = row[8]
+        request_status = row[9]
 
-        # If it's a task request, look up whether it is Pending, Approved, or Rejected
-        request_status = None
+        # For task requests, ensure each task shows only once (latest notification)
         if notif_type == 'task_request':
-            request_status = get_request_status_by_id(ref_id)
+            dedup_key = task_id if task_id else f"ref_{ref_id}"
+            if dedup_key in seen_task_request_tasks:
+                continue
+            seen_task_request_tasks.add(dedup_key)
 
         notifications.append({
-            's_no': index,
+            's_no': len(notifications) + 1,
             'id': row[0],
             'recipient': row[1],
             'title': row[2],

@@ -139,7 +139,7 @@ def request_task_inprogress_api(request):
 
         employee_name = request.session.get('user_name') or 'Employee'
 
-        create_task_request_service(
+        request_id, created, message = create_task_request_service(
             task_id=task_id,
             task_name=task_name,
             employee_name=employee_name,
@@ -147,7 +147,10 @@ def request_task_inprogress_api(request):
             reason=reason
         )
 
-        return JsonResponse({'status': 'success', 'message': 'Approval request sent to Admin.'})
+        if not created:
+            return JsonResponse({'status': 'error', 'message': message}, status=400)
+
+        return JsonResponse({'status': 'success', 'message': message})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
