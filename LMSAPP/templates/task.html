@@ -474,20 +474,58 @@
                     confirmButtonColor: '#2563eb',
                     cancelButtonColor: '#64748b',
                     preConfirm: () => {
-                        const reason = document.getElementById('swal-request-reason')?.value || '';
+                        const reason = (document.getElementById('swal-request-reason')?.value || '').trim();
+                        if (!reason) {
+                            Swal.showValidationMessage('Please enter a reason for your request.');
+                            return false;
+                        }
                         return { reason };
                     }
                 });
 
-                if (formValues) {
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Request Sent',
-                        text: 'Your request to start this task has been sent to the Admin for approval.',
-                        width: '380px',
-                        confirmButtonText: 'OK',
-                        confirmButtonColor: '#2563eb'
-                    });
+                if (formValues && formValues.reason) {
+                    const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+                    try {
+                        const response = await fetch('/api/tasks/request-inprogress/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrf
+                            },
+                            body: JSON.stringify({
+                                task_id: taskId,
+                                task_name: requestedTaskName,
+                                active_task_name: activeTaskName,
+                                reason: formValues.reason
+                            })
+                        });
+                        const result = await response.json();
+                        if (result.status === 'success') {
+                            await Swal.fire({
+                                icon: 'success',
+                                title: 'Request Sent',
+                                text: 'Your request to start this task has been sent to Admin for approval.',
+                                width: '380px',
+                                confirmButtonText: 'OK',
+                                confirmButtonColor: '#2563eb'
+                            });
+                        } else {
+                            await Swal.fire({
+                                icon: 'error',
+                                title: 'Request Failed',
+                                text: result.message || 'Could not submit request.',
+                                confirmButtonColor: '#2563eb'
+                            });
+                        }
+                    } catch (err) {
+                        console.error('Error sending task request:', err);
+                        await Swal.fire({
+                            icon: 'error',
+                            title: 'Network Error',
+                            text: 'Could not connect to the server.',
+                            confirmButtonColor: '#2563eb'
+                        });
+                    }
                 }
 
                 selectElem.value = previousStatus;

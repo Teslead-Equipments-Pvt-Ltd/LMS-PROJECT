@@ -262,3 +262,64 @@
     border-color: #e2e8f0;
     cursor: not-allowed;
 }
+
+/* Task Request & Action Button Styles */
+.badge-request {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.btn-action-approve {
+    background-color: #16a34a;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-action-approve:hover {
+    background-color: #15803d;
+}
+
+.btn-action-reject {
+    background-color: #ef4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-action-reject:hover {
+    background-color: #dc2626;
+}
+
+.badge-action-approved {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.badge-action-rejected {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}

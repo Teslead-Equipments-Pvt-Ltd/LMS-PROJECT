@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="{% static 'css/notification.css' %}">
 
 <div class="notification-card-wrapper">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 
     <div class="notification-topbar">
         <h2>
@@ -21,6 +22,7 @@
                 <option value="COMPLETED">Completed</option>
                 <option value="HOLD">On Hold</option>
                 <option value="CREATED">Created</option>
+                <option value="REQUEST">Task Request</option>
             </select>
 
             <!-- Search Input -->
@@ -40,8 +42,11 @@
                     <th style="width: 110px;">Type</th>
                     <th style="width: 230px;">Title</th>
                     <th>Message</th>
-                    <th style="width: 130px;">Recipient</th>
+                    {% comment %} <th style="width: 130px;">Recipient</th> {% endcomment %}
                     <th style="width: 150px; text-align: center;">Date & Time</th>
+                    {% if request.session.user_type != 'Employee' %}
+                    <th style="width: 170px; text-align: center;">Action</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody id="notificationTableBody">
@@ -55,20 +60,42 @@
                             <span class="badge-pill badge-on-hold">On Hold</span>
                         {% elif 'pending' in n.notification_type|lower %}
                             <span class="badge-pill badge-pending">Pending</span>
+                        {% elif 'request' in n.notification_type|lower %}
+                            <span class="badge-pill badge-request">Request</span>
                         {% else %}
                             <span class="badge-pill badge-created">New Task</span>
                         {% endif %}
                     </td>
                     <td title="{{ n.title }}"><strong>{{ n.title }}</strong></td>
                     <td title="{{ n.message }}">{{ n.message }}</td>
-                    <td>
+                    {% comment %} <td>
                         <span class="badge-recipient-tag">{{ n.recipient|default:"-" }}</span>
-                    </td>
+                    </td> {% endcomment %}
                     <td style="text-align: center;"><span class="time-text">{{ n.created_at }}</span></td>
+                    {% if request.session.user_type != 'Employee' %}
+                    <td style="text-align: center;">
+                        {% if n.notification_type == 'task_request' and n.reference_id %}
+                            {% if n.request_status == 'Pending' %}
+                                <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                                    <button type="button" class="btn-action-approve" onclick="handleRequestAction({{ n.reference_id }}, 'approve')">Approve</button>
+                                    <button type="button" class="btn-action-reject" onclick="handleRequestAction({{ n.reference_id }}, 'reject')">Reject</button>
+                                </div>
+                            {% elif n.request_status == 'Approved' %}
+                                <span class="badge-action-approved">✓ Approved</span>
+                            {% elif n.request_status == 'Rejected' %}
+                                <span class="badge-action-rejected">✗ Rejected</span>
+                            {% else %}
+                                <span style="color: #94a3b8; font-size: 13px;">-</span>
+                            {% endif %}
+                        {% else %}
+                            <span style="color: #94a3b8; font-size: 13px;">-</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="no-records">No notifications available.</td>
+                    <td colspan="{% if request.session.user_type != 'Employee' %}7{% else %}6{% endif %}" class="no-records">No notifications available.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -133,6 +160,8 @@
                 matchesType = rowType.includes('hold');
             } else if (currentFilter === 'CREATED') {
                 matchesType = rowType.includes('created');
+            } else if (currentFilter === 'REQUEST') {
+                matchesType = rowType.includes('request');
             }
 
             // Search Keyword Filter
@@ -235,6 +264,81 @@
     function goToPage(pageNumber) {
         currentPage = pageNumber;
         renderPage();
+    }
+
+    async function handleRequestAction(requestId, action) {
+        const actionText = action === 'approve' ? 'Approve' : 'Reject';
+        const confirmColor = action === 'approve' ? '#16a34a' : '#ef4444';
+
+        let remarks = '';
+        if (action === 'reject') {
+            const { value: inputRemarks, isConfirmed } = await Swal.fire({
+                title: 'Reject Task Request',
+                input: 'textarea',
+                inputLabel: 'Reason for Rejection (Optional):',
+                inputPlaceholder: 'Enter any remarks...',
+                showCancelButton: true,
+                confirmButtonText: 'Confirm Reject',
+                confirmButtonColor: confirmColor,
+                cancelButtonText: 'Cancel'
+            });
+            if (!isConfirmed) return;
+            remarks = inputRemarks || '';
+        } else {
+            const result = await Swal.fire({
+                title: 'Approve Task Request?',
+                text: 'This will move the task to "In Progress" and notify the employee.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Approve',
+                confirmButtonColor: confirmColor,
+                cancelButtonText: 'Cancel'
+            });
+            if (!result.isConfirmed) return;
+        }
+
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            const response = await fetch('/api/tasks/request-action/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrf
+                },
+                body: JSON.stringify({
+                    request_id: requestId,
+                    action: action,
+                    remarks: remarks
+                })
+            });
+
+            const data = await response.json();
+            if (data.status === 'success') {
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: data.message,
+                    confirmButtonColor: '#2563eb'
+                });
+                location.reload();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Action Failed',
+                    text: data.message || 'Could not process request.',
+                    confirmButtonColor: '#2563eb'
+                });
+            }
+        } catch (err) {
+            console.error('Error in handleRequestAction:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Network Error',
+                text: 'Could not connect to the server.',
+                confirmButtonColor: '#2563eb'
+            });
+        }
     }
 </script>
 {% endblock %}
