@@ -1,0 +1,307 @@
+/* ====================================================
+   Simple Task Request UI Styling
+   Consistent with notification.css
+==================================================== */
+
+.task-card-wrapper {
+    width: 100%;
+    min-height: calc(100vh - 130px);
+    background: #ffffff;
+    padding: 22px 26px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+/* Header & Filter Toolbar */
+.task-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.task-topbar h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Filter Controls */
+.task-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.form-select-simple {
+    padding: 7px 12px;
+    font-size: 13px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #334155;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+}
+
+.form-select-simple:focus {
+    border-color: #2563eb;
+}
+
+.search-box-simple {
+    position: relative;
+    min-width: 220px;
+}
+
+.search-box-simple input {
+    width: 100%;
+    padding: 7px 12px 7px 32px;
+    font-size: 13px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    outline: none;
+    background: #ffffff;
+    color: #1e293b;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease;
+}
+
+.search-box-simple input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+
+.search-box-simple .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+    font-size: 12px;
+}
+
+/* Table Container */
+.table-container-simple {
+    width: 100%;
+    flex: 1;
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.task-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    table-layout: fixed;
+}
+
+.task-table thead {
+    background-color: #f8fafc;
+}
+
+.task-table th {
+    padding: 13px 14px;
+    font-weight: 600;
+    color: #475569;
+    text-align: left;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.task-table td {
+    padding: 12px 14px;
+    color: #334155;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.task-table tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Status & Active Task Badges */
+.badge-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: capitalize;
+    white-space: nowrap;
+}
+
+.badge-pending {
+    background-color: #ede9fe;
+    color: #5b21b6;
+}
+
+.badge-approved {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.badge-rejected {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.badge-active-task {
+    display: inline-block;
+    background-color: #fef3c7;
+    color: #92400e;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.time-text {
+    color: #64748b;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.no-records {
+    text-align: center;
+    padding: 35px 20px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* Action Buttons */
+.btn-action-approve {
+    background-color: #16a34a;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-action-approve:hover {
+    background-color: #15803d;
+}
+
+.btn-action-reject {
+    background-color: #ef4444;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-action-reject:hover {
+    background-color: #dc2626;
+}
+
+.badge-action-approved {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.badge-action-rejected {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* Pagination Bar */
+.pagination-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 4px 0 4px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pagination-text {
+    font-size: 13px;
+    color: #64748b;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.page-btn {
+    min-width: 30px;
+    height: 30px;
+    padding: 0 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #334155;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.page-btn:hover:not(:disabled):not(.active) {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+.page-btn.active {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #2563eb;
+    font-weight: 600;
+    cursor: default;
+}
+
+.page-btn:disabled {
+    background: #f8fafc;
+    color: #cbd5e1;
+    border-color: #e2e8f0;
+    cursor: not-allowed;
+}

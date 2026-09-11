@@ -24,17 +24,17 @@
         <ul class="sidebar-menu">
 
         {% if request.session.user_type == 'Employee' or request.session.role == 'EMPLOYEE' %}
-            <li><a href="{% url 'task_page' %}">Task</a></li>
-            <li><a href="{% url 'notification_page'%}">Notifications</a></li>
+            <li><a href="{% url 'task_page' %}" {% if request.resolver_match.url_name == 'task_page' %}class="active"{% endif %}>Task</a></li>
+            <li><a href="{% url 'notification_page'%}" {% if request.resolver_match.url_name == 'notification_page' %}class="active"{% endif %}>Notifications</a></li>
 
         {% else %}
-            <li><a href="{% url 'dashboard_page' %}">Dashboard</a></li>
-            <li><a href="{% url 'notification_page'%}">Notifications</a></li>
-            <li><a href="{% url 'task_page' %}">Task</a></li>
-            <li><a href="{% url 'project_page' %}">Project</a></li>
-            <li><a href=" ">Assigned Tasks</a></li>
-            <li><a href=" ">Task Request</a></li>
-            <li><a href="{% url 'employee_page' %} ">Employees</a></li>
+            <li><a href="{% url 'dashboard_page' %}" {% if request.resolver_match.url_name == 'dashboard_page' %}class="active"{% endif %}>Dashboard</a></li>
+            <li><a href="{% url 'notification_page'%}" {% if request.resolver_match.url_name == 'notification_page' %}class="active"{% endif %}>Notifications</a></li>
+            <li><a href="{% url 'task_page' %}" {% if request.resolver_match.url_name == 'task_page' %}class="active"{% endif %}>Task</a></li>
+            <li><a href="{% url 'project_page' %}" {% if request.resolver_match.url_name == 'project_page' %}class="active"{% endif %}>Project</a></li>
+            <li><a href="{% url 'assigned_task_page' %}">Assigned Tasks</a></li>
+            <li><a href="{% url 'task_request_page' %}" {% if request.resolver_match.url_name == 'task_request_page' %}class="active"{% endif %}>Task Request</a></li>
+            <li><a href="{% url 'employee_page' %} " {% if request.resolver_match.url_name == 'employee_page' %}class="active"{% endif %}>Employees</a></li>
         {% endif %}
         </ul>
     </div>

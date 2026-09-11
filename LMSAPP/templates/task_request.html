@@ -1,7 +1,336 @@
 {% extends 'base.html' %}
 {% load static %}
+
+{% block title %}Task Requests{% endblock %}
+
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/task_request.css' %}">
 
-<h1>new page</h1>
+<div class="task-card-wrapper">
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 
+    <!-- Header & Filter Bar -->
+    <div class="task-topbar">
+        <h2>Task Requests</h2>
+ 
+        <div class="task-actions">
+            <!-- Status Filter -->
+            <select id="statusFilter" class="form-select-simple" onchange="handleFilterChange()">
+                <option value="ALL">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Rejected">Rejected</option>
+            </select>
+
+            <!-- Search Box -->
+            <div class="search-box-simple">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="requestSearch" placeholder="Search task request..." oninput="handleSearch()">
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="table-container-simple">
+        <table class="task-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center;">#</th>
+                    <th style="width: 140px;">Employee</th>
+                    <th style="width: 180px;">Task Name</th>
+                    <th style="width: 160px;">Active Task</th>
+                    <th>Reason</th>
+                    <th style="width: 150px; text-align: center;">Requested Date</th>
+                    <th style="width: 110px; text-align: center;">Status</th>
+                    <th style="width: 150px;">Admin Remarks</th>
+                    {% if is_admin %}
+                    <th style="width: 160px; text-align: center;">Action</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody id="requestTableBody">
+                {% for req in task_requests %}
+                <tr class="request-row" data-status="{{ req.status|lower }}">
+                    <td style="text-align: center;" class="row-sno">{{ forloop.counter }}</td>
+                    <td><strong>{{ req.employee_name }}</strong></td>
+                    <td title="{{ req.task_name }}">
+                        <strong>{{ req.task_name }}</strong>
+                        {% if req.project_name and req.project_name != 'General' %}
+                            <div style="font-size: 11px; color: #64748b;">📁 {{ req.project_name }}</div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if req.active_task_name and req.active_task_name != '-' %}
+                            <span class="badge-active-task" title="{{ req.active_task_name }}">{{ req.active_task_name }}</span>
+                        {% else %}
+                            <span style="color: #94a3b8;">-</span>
+                        {% endif %}
+                    </td>
+                    <td title="{{ req.reason }}">{{ req.reason }}</td>
+                    <td style="text-align: center;"><span class="time-text">{{ req.created_at }}</span></td>
+                    <td style="text-align: center;">
+                        {% if req.status == 'Pending' %}
+                            <span class="badge-pill badge-pending">Pending</span>
+                        {% elif req.status == 'Approved' %}
+                            <span class="badge-pill badge-approved">Approved</span>
+                        {% elif req.status == 'Rejected' %}
+                            <span class="badge-pill badge-rejected">Rejected</span>
+                        {% else %}
+                            <span class="badge-pill">{{ req.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if req.admin_remarks %}
+                            <span style="color: #dc2626; font-size: 12.5px;">{{ req.admin_remarks }}</span>
+                        {% else %}
+                            <span style="color: #94a3b8;">-</span>
+                        {% endif %}
+                    </td>
+                    {% if is_admin %}
+                    <td style="text-align: center;">
+                        {% if req.status == 'Pending' %}
+                            <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                                <button type="button" class="btn-action-approve" onclick="handleRequestAction({{ req.id }}, 'approve')">Approve</button>
+                                <button type="button" class="btn-action-reject" onclick="handleRequestAction({{ req.id }}, 'reject')">Reject</button>
+                            </div>
+                        {% elif req.status == 'Approved' %}
+                            <span class="badge-action-approved">✓ Approved</span>
+                        {% elif req.status == 'Rejected' %}
+                            <span class="badge-action-rejected">✗ Rejected</span>
+                        {% else %}
+                            <span style="color: #94a3b8; font-size: 13px;">-</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{% if is_admin %}9{% else %}8{% endif %}" class="no-records">No task requests found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div id="noMatchMessage" class="no-records" style="display: none;">
+            No matching task requests found.
+        </div>
+    </div>
+
+    <!-- Pagination Bar -->
+    <div class="pagination-bar" id="paginationBar" style="display: none;">
+        <div class="pagination-text" id="paginationInfo">
+            Showing 0-0 of 0 requests
+        </div>
+        <div class="pagination-controls" id="paginationControls">
+            <!-- Buttons injected by JavaScript -->
+        </div>
+    </div>
+
+</div>
+
+<!-- Client-side Filtering, Pagination & Approval Script -->
+<script>
+    let currentFilter = 'ALL';
+    let searchQuery = '';
+    let currentPage = 1;
+    const pageSize = 10;
+    let matchingRows = [];
+
+    document.addEventListener('DOMContentLoaded', function () {
+        updateFilteredRows();
+    });
+
+    function handleFilterChange() {
+        currentFilter = document.getElementById('statusFilter').value;
+        currentPage = 1;
+        updateFilteredRows();
+    }
+
+    function handleSearch() {
+        searchQuery = document.getElementById('requestSearch').value.toLowerCase().trim();
+        currentPage = 1;
+        updateFilteredRows();
+    }
+
+    function updateFilteredRows() {
+        const allRows = Array.from(document.querySelectorAll('#requestTableBody tr.request-row'));
+        matchingRows = [];
+
+        allRows.forEach(row => {
+            const rowStatus = (row.dataset.status || '').toLowerCase();
+            const rowText = row.textContent.toLowerCase();
+
+            // Status filter check
+            let matchesFilter = false;
+            if (currentFilter === 'ALL') {
+                matchesFilter = true;
+            } else if (rowStatus === currentFilter.toLowerCase()) {
+                matchesFilter = true;
+            }
+
+            // Search filter check
+            const matchesSearch = !searchQuery || rowText.includes(searchQuery);
+
+            if (matchesFilter && matchesSearch) {
+                matchingRows.push(row);
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // No Match message display
+        const noMatch = document.getElementById('noMatchMessage');
+        if (noMatch) {
+            noMatch.style.display = (allRows.length > 0 && matchingRows.length === 0) ? 'block' : 'none';
+        }
+
+        renderPage();
+    }
+
+    function renderPage() {
+        const totalItems = matchingRows.length;
+        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+        const paginationBar = document.getElementById('paginationBar');
+
+        if (currentPage > totalPages) {
+            currentPage = totalPages;
+        }
+
+        const startIndex = (currentPage - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+
+        matchingRows.forEach((row, index) => {
+            if (index >= startIndex && index < endIndex) {
+                row.style.display = '';
+                const snoCell = row.querySelector('.row-sno');
+                if (snoCell) snoCell.textContent = index + 1;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        if (totalItems > 0) {
+            paginationBar.style.display = 'flex';
+        } else {
+            paginationBar.style.display = 'none';
+            return;
+        }
+
+        const displayStart = totalItems === 0 ? 0 : startIndex + 1;
+        const displayEnd = Math.min(endIndex, totalItems);
+        const infoElem = document.getElementById('paginationInfo');
+        if (infoElem) {
+            infoElem.textContent = `Showing ${displayStart}-${displayEnd} of ${totalItems} requests`;
+        }
+
+        // Render page buttons
+        const controls = document.getElementById('paginationControls');
+        controls.innerHTML = '';
+
+        const prevBtn = document.createElement('button');
+        prevBtn.type = 'button';
+        prevBtn.className = 'page-btn';
+        prevBtn.innerHTML = '&laquo;';
+        prevBtn.disabled = (currentPage === 1);
+        prevBtn.onclick = () => goToPage(currentPage - 1);
+        controls.appendChild(prevBtn);
+
+        for (let p = 1; p <= totalPages; p++) {
+            const pBtn = document.createElement('button');
+            pBtn.type = 'button';
+            pBtn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+            pBtn.textContent = p;
+            pBtn.onclick = () => goToPage(p);
+            controls.appendChild(pBtn);
+        }
+
+        const nextBtn = document.createElement('button');
+        nextBtn.type = 'button';
+        nextBtn.className = 'page-btn';
+        nextBtn.innerHTML = '&raquo;';
+        nextBtn.disabled = (currentPage === totalPages);
+        nextBtn.onclick = () => goToPage(currentPage + 1);
+        controls.appendChild(nextBtn);
+    }
+
+    function goToPage(pageNumber) {
+        currentPage = pageNumber;
+        renderPage();
+    }
+
+    // Admin Approve / Reject Function
+    async function handleRequestAction(requestId, action) {
+        const isApprove = action === 'approve';
+        let remarks = '';
+
+        if (!isApprove) {
+            const { value: inputRemarks, isConfirmed } = await Swal.fire({
+                title: 'Reject Task Request',
+                input: 'textarea',
+                inputLabel: 'Reason for Rejection (Optional):',
+                inputPlaceholder: 'Enter remarks...',
+                showCancelButton: true,
+                confirmButtonText: 'Confirm Reject',
+                confirmButtonColor: '#ef4444',
+                cancelButtonText: 'Cancel'
+            });
+            if (!isConfirmed) return;
+            remarks = inputRemarks || '';
+        } else {
+            const result = await Swal.fire({
+                title: 'Approve Task Request?',
+                text: 'This will move the task to "In Progress" and notify the employee.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Approve',
+                confirmButtonColor: '#16a34a',
+                cancelButtonText: 'Cancel'
+            });
+            if (!result.isConfirmed) return;
+        }
+
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        try {
+            const response = await fetch('/api/tasks/request-action/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrf
+                },
+                body: JSON.stringify({
+                    request_id: requestId,
+                    action: action,
+                    remarks: remarks
+                })
+            });
+
+            const data = await response.json();
+            if (data.status === 'success') {
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: data.message,
+                    confirmButtonColor: '#2563eb'
+                });
+                location.reload();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Could not process request.',
+                    confirmButtonColor: '#2563eb'
+                });
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Network Error',
+                text: 'Could not connect to server.',
+                confirmButtonColor: '#2563eb'
+            });
+        }
+    }
+</script>
 {% endblock %}
