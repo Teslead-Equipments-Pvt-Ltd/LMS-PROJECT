@@ -9,6 +9,8 @@ body {
     display: flex;
     min-height: 100vh;
     background-color: #f4f6f9;
+    overflow-y: hidden;
+    overflow-x: hidden;
 }
 
 /* Sidebar Styling - Neat Left Aligned Layout */
