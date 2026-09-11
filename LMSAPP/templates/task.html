@@ -88,6 +88,7 @@
                 <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}"
                     data-created-date="{{ task.created_date }}" data-due-date="{{ task.due_date }}"
                     data-employee="{{ task.employee_name }}" data-module-type="{{ task.module_type }}"
+                    data-employee-status="{{ task.employee_status_json }}"
                     id="row-{{ task.id }}">
                     {% if request.session.user_type|lower == "superadmin" or request.session.user_type|lower == "admin" %}
                     <td style="text-align: center;">
@@ -97,14 +98,17 @@
                     <td>{{ task.s_no }}</td>
                     <td><strong>{{ task.task_name }}</strong></td>
                     <td><span class="badge badge-data-logger">{{ task.project_name }}</span></td>
-                    <td><b>{{ task.employee_name |default:"-" }}</b></td>
+                    <td>
+                        <span class="employee-name-clickable" onclick="openEmployeeStatusModal({{ task.id }})" title="Click to view assigned employee status">
+                            <b>{{ task.employee_name|default:"-" }}</b>
+                        </span>
+                    </td>
                     <td id="created-date-{{ task.id }}" data-value="{{ task.created_date }}">{{ task.created_date|default:"-" }}</td>
                     <td>{{ task.due_date|default:"-" }}</td>
                     <td>
                         <select
                             class="status-select status-{% if task.status == 'Completed' %}completed{% elif task.status == 'In Progress' or task.status == 'InProgress' %}in-progress{% elif task.status == 'On Hold' %}onhold{% else %}not-worked{% endif %}"
-                            onchange="changeStatus(this, {{ task.id }})" 
-                            {% if request.session.user_type|lower == "employee" or request.session.role|lower == "employee" %}{% if task.status == "Completed" %}disabled{% endif %}{% endif %}>
+                            onchange="changeStatus(this, {{ task.id }})" {% if request.session.user_type|lower == "employee" or request.session.role|lower == "employee" %}{% if task.status == "Completed" %}disabled{% endif %}{% endif %}>
                             <option value="Not Worked" class="opt-not-worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
                             <option value="In Progress" class="opt-in-progress" {% if task.status == "In Progress" or task.status == "InProgress" %}selected{% endif %}>InProgress</option>
                             <option value="On Hold" class="opt-onhold" {% if task.status == "On Hold" %}selected{% endif %}>On Hold</option>
@@ -130,8 +134,8 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="{% if request.session.user_type|lower == 'superadmin' or request.session.user_type|lower == 'admin' %}{% else %}{% endif %}" style="text-align: center; color: #64748b; padding: 25px;">No tasks found. Click
-                        "Add New Task" to create one.</td>
+                    <td colspan="{% if request.session.user_type|lower == 'superadmin' or request.session.user_type|lower == 'admin' %}{% else %}{% endif %}"
+                        style="text-align: center; color: #64748b; padding: 25px;">No tasks found. Click"Add New Task" to create one.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -243,8 +247,7 @@
                         <ul class="project-item-list" id="editProjectList">
                             {% for proj in projects %}
                             <li class="project-item"
-                                onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{
-                                proj.project_name }}</li>
+                                onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
                             {% empty %}
                             <li class="project-item-empty">No projects found</li>
                             {% endfor %}
@@ -256,11 +259,13 @@
                 <label>Assign To Employees<span class="required">*</span></label>
                 <div class="employee-checkbox-list" id="editEmpList">
                     {% for emp in employee %}
+                    {% if emp.role == 'EMPLOYEE' %}
                     <div class="employee-checkbox-item">
                         <input type="checkbox" class="edit-emp-checkbox" id="edit_emp_{{ forloop.counter }}"
                             value="{{ emp.username }}">
                         <label for="edit_emp_{{ forloop.counter }}">{{ emp.username }}</label>
                     </div>
+                    {% endif %}
                     {% empty %}
                     <div style="color: #94a3b8; font-size: 13px;">No employees found</div>
                     {% endfor %}
@@ -325,6 +330,39 @@
         </div>
     </div>
 </div>
+
+<!-- Modal: Assigned Employee Status -->
+ {% if request.session.user_type|lower == "admin" or request.session.user_type|lower == "superadmin" %}
+<div class="modal-overlay" id="employeeStatusModal">
+    <div class="modal-content" style="max-width: 520px; width: 90%;">
+        <div class="emp-modal-header">
+            <h3>Assigned Employee Status</h3>
+            <button type="button" class="emp-modal-close" onclick="closeEmployeeStatusModal()">&times;</button>
+        </div>
+        <div class="emp-modal-task-info">
+            <div><strong>Task Name:</strong> <span id="empModalTaskName" style="color: #280ad3; font-weight: 600;"></span></div>
+            <div><strong>Project Name:</strong> <span id="empModalProjectName" style="color: #475569; font-weight: 500;"></span></div>
+        </div>
+        <div class="emp-table-container">
+            <table class="emp-status-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px; text-align: center;">S.No</th>
+                        <th>Employee Name</th>
+                        <th style="text-align: center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="empStatusTableBody">
+                    <!-- Populated dynamically -->
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-actions" style="margin-top: 20px;">
+            <button type="button" class="btn-modal-cancel" onclick="closeEmployeeStatusModal()">Close</button>
+        </div>
+    </div>
+</div>
+{% endif %}
 <script src="{% static 'sweetalert2/sweetalert2.min.js' %}"></script>
 <script>
     let activeDeleteId = null;
@@ -1080,13 +1118,35 @@
     // 7. Bulk Delete Tasks Functions
     function openBulkDelete() {
         const count = document.querySelectorAll('.row-checkbox:checked').length;
-        if (count === 0) return;
-        document.getElementById('bulkDeleteCountText').textContent = count;
-        document.getElementById('bulkDeleteModal').style.display = 'flex';
+        if (count === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No Selection',
+                text: 'Please select at least one task to delete.',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        Swal.fire({
+            icon: 'question',
+            title: 'Are you sure want to delete selected task(s)?',
+            text: `You have selected ${count} task(s).`,
+            width: '350px',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete it!',
+            cancelButtonText: 'Cancel'
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                deleteBulk();
+            }
+        });
     }
 
     function closeBulkDelete() {
-        document.getElementById('bulkDeleteModal').style.display = 'none';
+        const modal = document.getElementById('bulkDeleteModal');
+        if (modal) modal.style.display = 'none';
     }
 
     async function deleteBulk() {
@@ -1144,6 +1204,136 @@
     //     window.location.reload();
     // }
 
+    // 9. Assigned Employee Status Modal Functions
+    let currentEmpModalTaskId = null;
+
+    function openEmployeeStatusModal(taskId) {
+        currentEmpModalTaskId = taskId;
+        const row = document.getElementById(`row-${taskId}`);
+        if (!row) return;
+
+        const taskName = row.querySelector('strong')?.textContent.trim() || 'N/A';
+        const projectName = row.dataset.project || 'N/A';
+        const employeeNameStr = row.dataset.employee || '';
+        const empStatusRaw = row.dataset.employeeStatus || '{}';
+
+        document.getElementById('empModalTaskName').textContent = taskName;
+        document.getElementById('empModalProjectName').textContent = projectName;
+
+        let empStatusDict = {};
+        try {
+            empStatusDict = JSON.parse(empStatusRaw);
+        } catch (e) {
+            empStatusDict = {};
+        }
+
+        const currentUserType = "{{ request.session.user_type|default:''|lower }}";
+        const currentUserRole = "{{ request.session.role|default:''|lower }}";
+        const isAdminOrSuper = (currentUserType === 'admin' || currentUserType === 'superadmin' || currentUserRole === 'admin' || currentUserRole === 'superadmin');
+
+        const assignedEmps = employeeNameStr.split(',').map(e => e.trim()).filter(e => e.length > 0);
+        const tbody = document.getElementById('empStatusTableBody');
+        tbody.innerHTML = '';
+
+        if (assignedEmps.length === 1) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 15px;">No assigned employees found.</td></tr>`;
+        } else {
+            assignedEmps.forEach((empName, index) => {
+                const status = empStatusDict[empName] || 'Not Worked';
+                
+                let badgeClass = 'emp-status-not-worked';
+                if (status === 'Completed') {
+                    badgeClass = 'emp-status-completed';
+                } else if (status === 'In Progress' || status === 'InProgress') {
+                    badgeClass = 'emp-status-in-progress';
+                } else if (status === 'On Hold') {
+                    badgeClass = 'emp-status-onhold';
+                }
+
+                const tr = document.createElement('tr');
+                if (isAdminOrSuper) {
+                    tr.innerHTML = `
+                        <td style="text-align: center;">${index + 1}</td>
+                        <td><strong>${empName}</strong></td>
+                        <td style="text-align: center;">
+                            <select class="status-select status-${status === 'Completed' ? 'completed' : (status === 'In Progress' || status === 'InProgress' ? 'in-progress' : (status === 'On Hold' ? 'onhold' : 'not-worked'))}"
+                                    onchange="updateIndividualEmployeeStatus(${taskId}, '${empName}', this)">
+                                <option value="Not Worked" ${status === 'Not Worked' ? 'selected' : ''}>Not Worked</option>
+                                <option value="In Progress" ${status === 'In Progress' || status === 'InProgress' ? 'selected' : ''}>InProgress</option>
+                                <option value="On Hold" ${status === 'On Hold' ? 'selected' : ''}>On Hold</option>
+                                <option value="Completed" ${status === 'Completed' ? 'selected' : ''}>Completed</option>
+                            </select>
+                        </td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td style="text-align: center;">${index + 1}</td>
+                        <td><strong>${empName}</strong></td>
+                        <td style="text-align: center;">
+                            <span class="emp-status-badge ${badgeClass}">${status}</span>
+                        </td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            });
+        }
+
+        document.getElementById('employeeStatusModal').style.display = 'flex';
+    }
+
+    function closeEmployeeStatusModal() {
+        document.getElementById('employeeStatusModal').style.display = 'none';
+        currentEmpModalTaskId = null;
+    }
+
+    async function updateIndividualEmployeeStatus(taskId, empName, selectElem) {
+        const newStatus = selectElem.value;
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        updateStatusClass(selectElem);
+
+        try {
+            const response = await fetch('/api/tasks/update/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({
+                    id: taskId,
+                    target_employee: empName,
+                    target_status: newStatus
+                })
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                const row = document.getElementById(`row-${taskId}`);
+                if (row) {
+                    let empStatusDict = {};
+                    try {
+                        empStatusDict = JSON.parse(row.dataset.employeeStatus || '{}');
+                    } catch (e) {
+                        empStatusDict = {};
+                    }
+                    empStatusDict[empName] = newStatus;
+                    row.dataset.employeeStatus = JSON.stringify(empStatusDict);
+                }
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to update employee status.',
+                    confirmButtonText: 'OK',
+                    width: '350px'
+                });
+            }
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Network error while updating employee status.',
+                confirmButtonText: 'OK',
+                width: '350px'
+            });
+        }
+    }
 
 </script>
 {% endblock %}
