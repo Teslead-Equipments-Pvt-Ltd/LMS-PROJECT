@@ -44,7 +44,6 @@ def add_task_api(request):
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def update_task_api(request):
-    
     if request.method != 'POST':
         return JsonResponse({'message': 'Method not allowed'}, status=405)
     try:
@@ -54,8 +53,11 @@ def update_task_api(request):
         project_name = body.get('project_name', '').strip()
         created_date = body.get('created_date', '').strip()
         due_date = body.get('due_date', '').strip()
-        status = body.get('status', 'Not Worked').strip()
+        status = body.get('status', '').strip()
         employee_name = body.get('employee_name', '').strip()
+        employee_status = body.get('employee_status')
+        target_employee = body.get('target_employee')
+        target_status = body.get('target_status')
        
         if not task_id:
             return JsonResponse({'status': 'error', 'message': 'Task ID is required.'}, status=400)
@@ -63,19 +65,47 @@ def update_task_api(request):
         updated_by = request.session.get('user_name') or 'Admin'
         user_role = str(request.session.get('role', '')).lower()
         user_type = str(request.session.get('user_type', '')).lower()
+        is_employee = (user_role == 'employee' or user_type == 'employee')
 
-        if user_role == 'employee' or user_type == 'employee':
-            # from django.db import connection
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT status FROM tasks WHERE id = %s", [task_id])
-                row = cursor.fetchone()
-                if row and row[0] == 'Completed':
-                    return JsonResponse({'status': 'error', 'message': 'Completed tasks are only changed by Admin.'}, status=400)
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT task_name, project_name, due_date, status, employee_name, created_date, employee_status FROM tasks WHERE id = %s", [task_id])
+            row = cursor.fetchone()
+
+        if row:
+            if not task_name: task_name = row[0]
+            if not project_name: project_name = row[1]
+            if not due_date: due_date = row[2]
+            if not status: status = row[3]
+            if not employee_name: employee_name = row[4]
+            if not created_date: created_date = row[5]
+            current_status = row[3]
+            current_emp_status_raw = row[6]
+        else:
+            current_status = status or 'Not Worked'
+            current_emp_status_raw = None
+
+        if is_employee and current_status == 'Completed':
+            return JsonResponse({'status': 'error', 'message': 'Completed tasks are only changed by Admin.'}, status=400)
+
+        current_emp_status_dict = {}
+        if current_emp_status_raw:
+            try:
+                current_emp_status_dict = json.loads(current_emp_status_raw)
+            except Exception:
+                current_emp_status_dict = {}
+
+        if is_employee:
+            if updated_by:
+                current_emp_status_dict[updated_by] = status
+                employee_status = current_emp_status_dict
+        elif target_employee and target_status:
+            current_emp_status_dict[target_employee] = target_status
+            employee_status = current_emp_status_dict
 
         # 1. Update task details in DB
         update_task_service(
             task_id, task_name, project_name, due_date, status, employee_name,
-            created_date=created_date
+            created_date=created_date, employee_status=employee_status
         )
 
         # 2. Send notification
@@ -112,7 +142,7 @@ def bulk_delete_tasks_api(request):
         return JsonResponse({'message': 'Method not allowed'}, status=405)
     try:
         body = json.loads(request.body)
-        task_ids = body.get('ids', [])
+        task_ids = body.get('ids') or body.get('task_ids') or body.get('count') or []
         if not task_ids:
             return JsonResponse({'status': 'error', 'message': 'No task IDs provided.'}, status=400)
         bulk_delete_tasks_service(task_ids)
