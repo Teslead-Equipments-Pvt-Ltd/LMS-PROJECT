@@ -88,8 +88,7 @@
                 <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}"
                     data-created-date="{{ task.created_date }}" data-due-date="{{ task.due_date }}"
                     data-employee="{{ task.employee_name }}" data-module-type="{{ task.module_type }}"
-                    data-employee-status="{{ task.employee_status_json }}"
-                    id="row-{{ task.id }}">
+                    data-employee-status="{{ task.employee_status_json }}" id="row-{{ task.id }}">
                     {% if request.session.user_type|lower == "superadmin" or request.session.user_type|lower == "admin" %}
                     <td style="text-align: center;">
                         <input type="checkbox" class="row-checkbox" value="{{ task.id }}" onclick="updateBulk()">
@@ -99,7 +98,8 @@
                     <td><strong>{{ task.task_name }}</strong></td>
                     <td><span class="badge badge-data-logger">{{ task.project_name }}</span></td>
                     <td>
-                        <span class="employee-name-clickable" onclick="openEmployeeStatusModal({{ task.id }})" title="Click to view assigned employee status">
+                        <span class="employee-name-clickable" onclick="openEmployeeStatusModal({{ task.id }})"
+                            title="Click to view assigned employee status">
                             <b>{{ task.employee_name|default:"-" }}</b>
                         </span>
                     </td>
@@ -108,7 +108,8 @@
                     <td>
                         <select
                             class="status-select status-{% if task.status == 'Completed' %}completed{% elif task.status == 'In Progress' or task.status == 'InProgress' %}in-progress{% elif task.status == 'On Hold' %}onhold{% else %}not-worked{% endif %}"
-                            onchange="changeStatus(this, {{ task.id }})" {% if request.session.user_type|lower == "employee" or request.session.role|lower == "employee" %}{% if task.status == "Completed" %}disabled{% endif %}{% endif %}>
+                            onchange="changeStatus(this, {{ task.id }})" {% if
+                            request.session.user_type|lower == "employee" or request.session.role|lower == "employee" %}{% if task.status == "Completed" %}disabled{% endif %}>
                             <option value="Not Worked" class="opt-not-worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
                             <option value="In Progress" class="opt-in-progress" {% if task.status == "In Progress" or task.status == "InProgress" %}selected{% endif %}>InProgress</option>
                             <option value="On Hold" class="opt-onhold" {% if task.status == "On Hold" %}selected{% endif %}>On Hold</option>
@@ -135,7 +136,8 @@
                 {% empty %}
                 <tr>
                     <td colspan="{% if request.session.user_type|lower == 'superadmin' or request.session.user_type|lower == 'admin' %}{% else %}{% endif %}"
-                        style="text-align: center; color: #64748b; padding: 25px;">No tasks found. Click"Add New Task" to create one.</td>
+                        style="text-align: center; color: #64748b; padding: 25px;">No tasks found. Click"Add New Task"
+                        to create one.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -172,8 +174,7 @@
                         </div>
                         <ul class="project-item-list" id="addProjectList">
                             {% for proj in projects %}
-                            <li class="project-item"
-                                onclick="selectProjectItem('add', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
+                            <li class="project-item" onclick="selectProjectItem('add', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
                             {% empty %}
                             <li class="project-item-empty">No projects found</li>
                             {% endfor %}
@@ -246,8 +247,7 @@
                         </div>
                         <ul class="project-item-list" id="editProjectList">
                             {% for proj in projects %}
-                            <li class="project-item"
-                                onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
+                            <li class="project-item" onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
                             {% empty %}
                             <li class="project-item-empty">No projects found</li>
                             {% endfor %}
@@ -332,7 +332,7 @@
 </div>
 
 <!-- Modal: Assigned Employee Status -->
- {% if request.session.user_type|lower == "admin" or request.session.user_type|lower == "superadmin" %}
+{% if request.session.user_type|lower == "admin" or request.session.user_type|lower == "superadmin" %}
 <div class="modal-overlay" id="employeeStatusModal">
     <div class="modal-content" style="max-width: 520px; width: 90%;">
         <div class="emp-modal-header">
@@ -340,8 +340,10 @@
             <button type="button" class="emp-modal-close" onclick="closeEmployeeStatusModal()">&times;</button>
         </div>
         <div class="emp-modal-task-info">
-            <div><strong>Task Name:</strong> <span id="empModalTaskName" style="color: #280ad3; font-weight: 600;"></span></div>
-            <div><strong>Project Name:</strong> <span id="empModalProjectName" style="color: #475569; font-weight: 500;"></span></div>
+            <div><strong>Task Name:</strong> <span id="empModalTaskName"
+                    style="color: #280ad3; font-weight: 600;"></span></div>
+            <div><strong>Project Name:</strong> <span id="empModalProjectName"
+                    style="color: #475569; font-weight: 500;"></span></div>
         </div>
         <div class="emp-table-container">
             <table class="emp-status-table">
@@ -1240,7 +1242,7 @@
         } else {
             assignedEmps.forEach((empName, index) => {
                 const status = empStatusDict[empName] || 'Not Worked';
-                
+
                 let badgeClass = 'emp-status-not-worked';
                 if (status === 'Completed') {
                     badgeClass = 'emp-status-completed';
