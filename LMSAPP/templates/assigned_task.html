@@ -1,7 +1,310 @@
-{% extends 'base.html' %}
-{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee In-Progress Tasks</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
 
-{% block content %}
+        /* Single page without scrollbar */
+        html, body {
+            height: 100vh;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 16px 24px;
+        }
 
-<h1>new page created</h1>
-{% endblock %}
+        /* Simple Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ffffff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            margin-bottom: 14px;
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-title h2 {
+            font-size: 18px;
+            color: #0f172a;
+        }
+
+        /* Live Indicator */
+        .live-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #dcfce7;
+            color: #15803d;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .back-btn {
+            background-color: #2563eb;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .back-btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        /* Table Container filling remaining screen */
+        .table-container {
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        thead {
+            background: #e2e8f0;
+        }
+
+        th {
+            padding: 11px 16px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #334155;
+            border-bottom: 1px solid #cbd5e1;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 11px 16px;
+            font-size: 13.5px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            color: #334155;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Employee Name */
+        .emp-name {
+            font-weight: bold;
+            color: #0f172a;
+        }
+
+        /* Simple Status Badges */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 9px;
+            border-radius: 12px;
+            font-size: 11.5px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .status-working {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .status-idle {
+            background-color: #f1f5f9;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Simple Top Bar -->
+    <div class="header">
+        <div class="header-title">
+            <h2>Employee In-Progress Tasks</h2>
+        </div>
+        <a href="{% url 'task_page' %}" class="back-btn">Back to Tasks</a>
+    </div>
+
+    <!-- Main Table -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center;">#</th>
+                    <th style="width: 130px;">Employee ID</th>
+                    <th style="width: 180px;">Employee Name</th>
+                    <th style="width: 150px; text-align: center;">Status</th>
+                    <th style="width: 200px;">Project Name</th>
+                    <th>In-Progress Tasks</th>
+                    <th style="width: 130px;">Start Date</th>
+                    <th style="width: 130px;">Due Date</th>
+                    
+                </tr>
+            </thead>
+            <tbody id="taskTableBody">
+                {% for emp in employees %}
+                <tr>
+                    <td style="text-align: center; color: #64748b;">{{ forloop.counter }}</td>
+                    <td>{{ emp.employee_id|default:"-" }}</td>
+                    <td><span class="emp-name">{{ emp.username }}</span></td>
+                    <td style="text-align: center;">
+                        {% if emp.task_count > 0 %}
+                            <span class="status-badge status-working">In Progress ({{ emp.task_count }})</span>
+                        {% else %}
+                            <span class="status-badge status-idle">Idle</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if emp.tasks %}
+                            {% for t in emp.tasks %}{{ t.project_name|default:"General" }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if emp.tasks %}
+                            {% for t in emp.tasks %}{{ t.task_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if emp.tasks %}
+                            {% for t in emp.tasks %}{{ t.created_date|default:"-" }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if emp.tasks %}
+                            {% for t in emp.tasks %}{{ t.due_date|default:"-" }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 30px; color: #94a3b8;">No employees found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Simple Real-time Auto-Update Script -->
+    <script>
+        // Fetch new data every 2 seconds without refreshing the page
+        setInterval(loadLiveData, 2000);
+
+        async function loadLiveData() {
+            try {
+                const response = await fetch('/api/tasks/assigned-live/');
+                const data = await response.json();
+
+                if (data.status === 'success' && data.employees) {
+                    updateTable(data.employees);
+                }
+            } catch (error) {
+                console.log('Error fetching live task data:', error);
+            }
+        }
+
+        function updateTable(employees) {
+            const tbody = document.getElementById('taskTableBody');
+            let html = '';
+
+            employees.forEach((emp, index) => {
+                // Comma-separated Project Names
+                let projectNames = '-';
+                // Comma-separated In-Progress Task Names
+                let taskNames = '-';
+                // Comma-separated Start Dates
+                let startDates = '-';
+                // Comma-separated Due Dates
+                let dueDates = '-';
+
+                if (emp.tasks && emp.tasks.length > 0) {
+                    projectNames = emp.tasks.map(t => t.project_name || 'General').join(', ');
+                    taskNames = emp.tasks.map(t => t.task_name).join(', ');
+                    startDates = emp.tasks.map(t => t.created_date || '-').join(', ');
+                    dueDates = emp.tasks.map(t => t.due_date || '-').join(', ');
+                }
+
+                // Status Badge
+                let statusBadge = '';
+                if (emp.task_count > 0) {
+                    statusBadge = `<span class="status-badge status-working">In Progress (${emp.task_count})</span>`;
+                } else {
+                    statusBadge = `<span class="status-badge status-idle">don't have any inprogress task</span>`;
+                }
+
+                const empId = emp.employee_id || '-';
+
+                html += `
+                    <tr>
+                        <td style="text-align: center; color: #64748b;">${index + 1}</td>
+                        <td>${escapeHtml(empId)}</td>
+                        <td><span class="emp-name">${escapeHtml(emp.username)}</span></td>
+                        <td style="text-align: center;">${statusBadge}</td>
+
+                        <td>${escapeHtml(projectNames)}</td>
+                        <td>${escapeHtml(taskNames)}</td>
+                        <td>${escapeHtml(startDates)}</td>
+                        <td>${escapeHtml(dueDates)}</td>
+                    </tr>
+                `;
+            });
+
+            if (employees.length === 0) {
+                html = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #94a3b8;">No employees found.</td></tr>';
+            }
+
+            tbody.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+            return String(text).replace(/[&<>"']/g, m => map[m]);
+        }
+    </script>
+</body>
+</html>
