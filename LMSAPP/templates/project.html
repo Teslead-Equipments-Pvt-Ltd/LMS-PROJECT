@@ -79,7 +79,11 @@
                             onclick="updateBulkState()">
                     </td>
                     <td>{{ project.s_no }}</td>
-                    <td><strong>{{ project.project_name }}</strong></td>
+                    <td>
+                        <a href="javascript:void(0);" class="project-name-link" onclick="openProjectTasksModal('{{ project.project_name|escapejs }}')" title="View tasks for {{ project.project_name }}">
+                            <strong>{{ project.project_name }}</strong>
+                        </a>
+                    </td>
                     <td>
                         {% if project.project_type == "Data Logger" %}
                         <span class="badge badge-data-logger">Data Logger</span>
@@ -245,6 +249,38 @@
         <p id="editSuccessText"> Updated successfully.</p>
         <div class="modal-actions">
             <button type="button" class="btn-modal-confirm" onclick="closeEditSuccessModal()">OK</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: View Project Assigned Tasks -->
+<div class="modal-overlay" id="projectTasksModal">
+    <div class="modal-content" style="width: 760px; max-width: 95%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 18px; color: #0f172a;">Tasks Assigned to: <span id="modalProjectName" style="color: #2563eb;"></span></h3>
+            <button type="button" onclick="closeProjectTasksModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b; line-height: 1;" title="Close">&times;</button>
+        </div>
+        
+        <div style="max-height: 380px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 13px;">
+                <thead>
+                    <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1;">
+                        <th style="padding: 10px 12px; width: 45px; text-align: center; color: #334155;">#</th>
+                        <th style="padding: 10px 12px; color: #334155;">Task Name</th>
+                        <th style="padding: 10px 12px; color: #334155;">Assigned Employee</th>
+                        <th style="padding: 10px 12px; color: #334155;">Start Date</th>
+                        <th style="padding: 10px 12px; color: #334155;">Due Date</th>
+                        <th style="padding: 10px 12px; text-align: center; color: #334155;">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="projectTasksTableBody">
+                    <!-- Populated via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 15px; justify-content: flex-end;">
+            <button type="button" class="btn-modal-cancel" onclick="closeProjectTasksModal()">Close</button>
         </div>
     </div>
 </div>
@@ -762,14 +798,53 @@
         }
     }
 
-    // function openEditSuccessModal(msg) {
-    //     if (msg) document.getElementById('editSuccessText').textContent = msg;
-    //     document.getElementById('editSuccessModal').style.display = 'flex';
-    // }
+    async function openProjectTasksModal(projectName) {
+        document.getElementById('modalProjectName').textContent = projectName;
+        const tbody = document.getElementById('projectTasksTableBody');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 25px; color: #64748b;">Loading tasks...</td></tr>';
+        document.getElementById('projectTasksModal').style.display = 'flex';
 
-    // function closeEditSuccessModal() {
-    //     document.getElementById('editSuccessModal').style.display = 'none';
-    //     window.location.reload();
-    // }
+        try {
+            const response = await fetch('/api/projects/tasks/?project_name=' + encodeURIComponent(projectName));
+            const result = await response.json();
+
+            if (result.status === 'success' && result.tasks && result.tasks.length > 0) {
+                let rows = '';
+                for (let i = 0; i < result.tasks.length; i++) {
+                    let t = result.tasks[i];
+                    
+                    let statusStyle = 'padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; display: inline-block;';
+                    if (t.status === 'In Progress') {
+                        statusStyle += ' background: #dcfce7; color: #166534;';
+                    } else if (t.status === 'Completed') {
+                        statusStyle += ' background: #dbeafe; color: #1e40af;';
+                    } else if (t.status === 'On Hold') {
+                        statusStyle += ' background: #fef3c7; color: #92400e;';
+                    } else {
+                        statusStyle += ' background: #f1f5f9; color: #64748b;';
+                    }
+
+                    rows += '<tr style="border-bottom: 1px solid #f1f5f9;">' +
+                        '<td style="padding: 9px 12px; text-align: center; color: #64748b;">' + (i + 1) + '</td>' +
+                        '<td style="padding: 9px 12px; font-weight: 600; color: #0f172a;">' + t.task_name + '</td>' +
+                        '<td style="padding: 9px 12px; color: #334155;">' + (t.employee_name || '-') + '</td>' +
+                        '<td style="padding: 9px 12px; color: #64748b;">' + (t.created_date || '-') + '</td>' +
+                        '<td style="padding: 9px 12px; color: #64748b;">' + (t.due_date || '-') + '</td>' +
+                        '<td style="padding: 9px 12px; text-align: center;"><span style="' + statusStyle + '">' + t.status + '</span></td>' +
+                    '</tr>';
+                }
+                tbody.innerHTML = rows;
+            } else {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 25px; color: #94a3b8;">No tasks assigned to this project.</td></tr>';
+            }
+        } catch (err) {
+            console.error('Error fetching project tasks:', err);
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 25px; color: #ef4444;">Failed to load tasks.</td></tr>';
+        }
+    }
+
+    function closeProjectTasksModal() {
+        document.getElementById('projectTasksModal').style.display = 'none';
+    }
 </script>
 {% endblock %}
