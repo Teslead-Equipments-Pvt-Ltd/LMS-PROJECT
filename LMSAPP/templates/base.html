@@ -32,7 +32,7 @@
             <li><a href="{% url 'notification_page'%}" {% if request.resolver_match.url_name == 'notification_page' %}class="active"{% endif %}>Notifications</a></li>
             <li><a href="{% url 'task_page' %}" {% if request.resolver_match.url_name == 'task_page' %}class="active"{% endif %}>Task</a></li>
             <li><a href="{% url 'project_page' %}" {% if request.resolver_match.url_name == 'project_page' %}class="active"{% endif %}>Project</a></li>
-            <li><a href=" ">Assigned Tasks</a></li>
+            <li><a href="{% url 'assigned_task_page' %}">Assigned Tasks</a></li>
             <li><a href="{% url 'task_request_page' %}" {% if request.resolver_match.url_name == 'task_request_page' %}class="active"{% endif %}>Task Request</a></li>
             <li><a href="{% url 'employee_page' %} " {% if request.resolver_match.url_name == 'employee_page' %}class="active"{% endif %}>Employees</a></li>
         {% endif %}

@@ -30,19 +30,19 @@ def create_notification_service(recipient, title, message, notification_type='ta
         """, [recipient, title, message, notification_type, reference_id])
     return True
 
-def get_request_status_by_id(request_id):
-    """
-    Helper function to get the current status of a task request (Pending, Approved, Rejected).
-    """
-    if not request_id:
-        return None
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT status FROM task_requests WHERE id = %s", [request_id])
-            row = cursor.fetchone()
-            return row[0] if row else None
-    except Exception:
-        return None
+# def get_request_status_by_id(request_id):
+#     """
+#     Helper function to get the current status of a task request (Pending, Approved, Rejected).
+#     """
+#     if not request_id:
+#         return None
+#     try:
+#         with connection.cursor() as cursor:
+#             cursor.execute("SELECT status FROM task_requests WHERE id = %s", [request_id])
+#             row = cursor.fetchone()
+#             return row[0] if row else None
+#     except Exception:
+#         return None
 
 
 def get_notifications_by_user(recipient=None, is_admin=False):
