@@ -18,13 +18,13 @@ def dashboard_page(request):
 
     for project in projects:
         if project.get('status') == 'Not Worked':
-            project_not_worked += 1
+            project_not_worked= project_not_worked + 1
         elif project.get('status') == 'In Progress':
-            project_in_progress += 1
+            project_in_progress = project_in_progress + 1
         elif project.get('status') == 'On Hold':
-            project_on_hold += 1
+            project_on_hold = project_on_hold + 1
         elif project.get('status') == 'Completed':
-            project_completed += 1
+            project_completed = project_completed + 1
 
     # Task counts
     total_tasks = len(tasks)
@@ -36,13 +36,13 @@ def dashboard_page(request):
 
     for task in tasks:
         if task.get('status') == 'Not Worked':
-            task_not_worked += 1
+            task_not_worked = task_not_worked + 1
         elif task.get('status') == 'In Progress':
-            task_in_progress += 1
+            task_in_progress = task_in_progress + 1
         elif task.get('status') == 'On Hold':
-            task_on_hold += 1
+            task_on_hold = task_on_hold + 1
         elif task.get('status') == 'Completed':
-            task_completed += 1
+            task_completed = task_completed + 1
 
     return render(request, 'dashboard.html', {
         'total_projects': total_projects,

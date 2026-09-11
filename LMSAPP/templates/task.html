@@ -32,14 +32,7 @@
             <input type="text" id="taskSearchInput" class="filter-input" placeholder="Search task, project, employee..."
                 oninput="filterTasks()">
         </div>
-        <div class="filter-group" style="display: none;">
-            <label for="moduleTypeFilter">Module Type:</label>
-            <select id="moduleTypeFilter" class="filter-select" onchange="filterTasks()">
-                <option value="ALL">All Module Types</option>
-                <option value="Data Logger">Data Logger</option>
-                <option value="Internal Project">Internal Project</option>
-            </select>
-        </div>
+
         <div class="filter-group">
             <label for="statusFilter">Status:</label>
             <select id="statusFilter" class="filter-select" onchange="filterTasks()">
@@ -200,7 +193,7 @@
             </div>
             <div class="form-group-modal">
                 <label for="new_created_date">Created Date</label>
-                <input type="date" id="new_created_date">
+                <input type="date" id="new_created_date" required>
             </div>
             <div class="form-group-modal">
                 <label for="new_due_date">Due Date<span class="required">*</span></label>
@@ -411,9 +404,6 @@
         const searchInput = document.getElementById('taskSearchInput');
         const searchValue = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
-        const moduleTypeElem = document.getElementById('moduleTypeFilter');
-        const moduleTypeValue = moduleTypeElem ? moduleTypeElem.value : 'ALL';
-
         const statusElem = document.getElementById('statusFilter');
         const statusValue = statusElem ? statusElem.value : 'ALL';
 
@@ -430,15 +420,11 @@
             const taskName = row.querySelector('strong') ? row.querySelector('strong').textContent.toLowerCase() : '';
             const projectName = row.dataset.project ? row.dataset.project.toLowerCase() : '';
             const employeeName = row.dataset.employee ? row.dataset.employee.toLowerCase() : '';
-            const moduleType = row.dataset.moduleType || '';
 
             const matchesSearch = !searchValue ||
                 taskName.includes(searchValue) ||
                 projectName.includes(searchValue) ||
                 employeeName.includes(searchValue);
-
-            // Module Type filter match
-            const matchesModuleType = (moduleTypeValue === 'ALL') || (moduleType === moduleTypeValue);
 
             // Status filter match
             const selectElem = row.querySelector('.status-select');
@@ -458,7 +444,7 @@
             const matchesCreatedDate = !createdDateValue || rowCreatedDate.includes(createdDateValue);
             const matchesDueDate = !dueDateValue || rowDueDate.includes(dueDateValue);
 
-            if (matchesSearch && matchesModuleType && matchesStatus && matchesCreatedDate && matchesDueDate) {
+            if (matchesSearch && matchesStatus && matchesCreatedDate && matchesDueDate) {
                 matchingRows.push(row);
             } else {
                 row.style.display = 'none';
