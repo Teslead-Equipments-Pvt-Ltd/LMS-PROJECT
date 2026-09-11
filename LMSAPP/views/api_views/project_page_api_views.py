@@ -5,7 +5,8 @@ from LMSAPP.services.project_service import (
     add_project_service,
     update_project_service,
     delete_project_service,
-    bulk_delete_projects_service
+    bulk_delete_projects_service,
+    get_tasks_by_project_service
 )
 
 def get_projects_api(request):
@@ -13,6 +14,20 @@ def get_projects_api(request):
     try:
         projects = get_all_projects_service()
         return JsonResponse({'status': 'success', 'data': projects})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def get_project_tasks_api(request):
+    """
+    Returns all tasks assigned to a specific project.
+    """
+    project_name = request.GET.get('project_name', '').strip()
+    if not project_name:
+        return JsonResponse({'status': 'error', 'message': 'Project name is required.'}, status=400)
+    try:
+        tasks = get_tasks_by_project_service(project_name)
+        return JsonResponse({'status': 'success', 'tasks': tasks})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 

@@ -94,3 +94,31 @@ def bulk_delete_projects_service(project_ids):
     with connection.cursor() as cursor:
         cursor.execute(f"DELETE FROM projects WHERE id IN ({format_strings})", project_ids)
     return True
+
+
+def get_tasks_by_project_service(project_name):
+    """
+    Fetches all tasks assigned to a specific project.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT id, task_name, project_name, created_date, due_date, status, employee_name
+            FROM tasks
+            WHERE LOWER(TRIM(project_name)) = LOWER(TRIM(%s))
+            ORDER BY id DESC
+        """, [project_name])
+        rows = cursor.fetchall()
+        
+    tasks = []
+    for index, row in enumerate(rows, start=1):
+        tasks.append({
+            's_no': index,
+            'id': row[0],
+            'task_name': row[1],
+            'project_name': row[2],
+            'created_date': row[3] or '-',
+            'due_date': row[4] or '-',
+            'status': row[5] or 'Not Worked',
+            'employee_name': row[6] or '-'
+        })
+    return tasks

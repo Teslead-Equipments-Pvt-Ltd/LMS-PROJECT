@@ -328,5 +328,17 @@
 
 .required {
     color: red;
-
 }
+
+.project-name-link {
+    color: #2563eb;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 700;
+    transition: color 0.15s ease, text-decoration 0.15s ease;
+}
+
+.project-name-link:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}

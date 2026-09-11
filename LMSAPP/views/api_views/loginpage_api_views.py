@@ -14,7 +14,7 @@ def login_api(request):
                 'status': 'error',
                 'message': 'Invalid JSON format in request.'
             }, status=400)
-        print("------------------------------",request.body)
+        
 
         # 2. Extract and sanitize credentials
         username = str(body.get('username', '')).strip()
@@ -46,7 +46,12 @@ def login_api(request):
         request.session['user_name'] = user.get('user_name')
         request.session['user_type'] = user.get('user_type')
         request.session['role'] = user.get('role')
-        # request.session['superuser'] = user.get('superuser', False)
+
+        # Session expiry: Admins stay logged in for 7 days; regular employees have 10-min session timeout
+        if user.get('role') in ['ADMIN', 'SUPER_ADMIN'] or user.get('user_type') in ['Admin', 'Superadmin']:
+            request.session.set_expiry(60 * 60 * 24 * 7)  # 7 days
+        else:
+            request.session.set_expiry(60 * 10)  # 10 minutes
 
         # 6. Success response
         return JsonResponse({

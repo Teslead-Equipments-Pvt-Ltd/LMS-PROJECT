@@ -90,7 +90,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow-y: auto;
         }
 
         table {
@@ -101,23 +101,32 @@
 
         thead {
             background: #e2e8f0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         th {
-            padding: 11px 16px;
-            font-size: 13px;
+            padding: 9px 14px;
+            font-size: 12.5px;
             font-weight: bold;
             color: #334155;
             border-bottom: 1px solid #cbd5e1;
             white-space: nowrap;
         }
 
+        tbody tr {
+            height: 48px;
+            transition: background-color 0.15s ease;
+        }
+
         td {
-            padding: 11px 16px;
-            font-size: 13.5px;
+            padding: 9px 15px;
+            font-size: 13px;
             border-bottom: 1px solid #f1f5f9;
             vertical-align: middle;
             color: #334155;
+            line-height: 1.3;
         }
 
         tr:hover {
@@ -187,7 +196,7 @@
                         {% if emp.task_count > 0 %}
                             <span class="status-badge status-working">In Progress ({{ emp.task_count }})</span>
                         {% else %}
-                            <span class="status-badge status-idle">Idle</span>
+                            <span class="status-badge status-idle">don't have any inprogress task</span>
                         {% endif %}
                     </td>
                     <td>
@@ -248,63 +257,93 @@
         }
 
         function updateTable(employees) {
-            const tbody = document.getElementById('taskTableBody');
-            let html = '';
+    const tbody = document.getElementById('taskTableBody');
+    let html = '';
 
-            employees.forEach((emp, index) => {
-                // Comma-separated Project Names
-                let projectNames = '-';
-                // Comma-separated In-Progress Task Names
-                let taskNames = '-';
-                // Comma-separated Start Dates
-                let startDates = '-';
-                // Comma-separated Due Dates
-                let dueDates = '-';
+    // If there are no employees at all
+    if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No employees found.</td></tr>';
+        return;
+    }
 
-                if (emp.tasks && emp.tasks.length > 0) {
-                    projectNames = emp.tasks.map(t => t.project_name || 'General').join(', ');
-                    taskNames = emp.tasks.map(t => t.task_name).join(', ');
-                    startDates = emp.tasks.map(t => t.created_date || '-').join(', ');
-                    dueDates = emp.tasks.map(t => t.due_date || '-').join(', ');
-                }
+    // 1. Loop through each employee
+    for (let i = 0; i < employees.length; i++) {
+        let emp = employees[i];
+        let serialNo = i + 1;
+        let empId = emp.employee_id || '-';
 
-                // Status Badge
-                let statusBadge = '';
-                if (emp.task_count > 0) {
-                    statusBadge = `<span class="status-badge status-working">In Progress (${emp.task_count})</span>`;
-                } else {
-                    statusBadge = `<span class="status-badge status-idle">don't have any inprogress task</span>`;
-                }
+        // 2. Prepare task details
+        let taskList = [];
+        let projectList = [];
+        let startDateList = [];
+        let dueDateList = [];
 
-                const empId = emp.employee_id || '-';
+        // Simple loop through this employee's tasks
+        if (emp.tasks && emp.tasks.length > 0) {
+            for (let t of emp.tasks) {
+                taskList.push(t.task_name);
+                projectList.push(t.project_name || 'General');
+                startDateList.push(t.created_date || '-');
+                dueDateList.push(t.due_date || '-');
+            }
+        }
 
-                html += `
-                    <tr>
-                        <td style="text-align: center; color: #64748b;">${index + 1}</td>
-                        <td>${escapeHtml(empId)}</td>
-                        <td><span class="emp-name">${escapeHtml(emp.username)}</span></td>
-                        <td style="text-align: center;">${statusBadge}</td>
+        // Join items with comma, or show '-' if empty
+        let taskNames = taskList.length > 0 ? taskList.join(', ') : '-';
+        let projectNames = projectList.length > 0 ? projectList.join(', ') : '-';
+        let startDates = startDateList.length > 0 ? startDateList.join(', ') : '-';
+        let dueDates = dueDateList.length > 0 ? dueDateList.join(', ') : '-';
 
-                        <td>${escapeHtml(projectNames)}</td>
-                        <td>${escapeHtml(taskNames)}</td>
-                        <td>${escapeHtml(startDates)}</td>
-                        <td>${escapeHtml(dueDates)}</td>
-                    </tr>
-                `;
-            });
+        // 3. Status badge
+        let statusBadge = '';
+        if (emp.task_count > 0) {
+            statusBadge = '<span class="status-badge status-working">In Progress (' + emp.task_count + ')</span>';
+        } else {
+            statusBadge = '<span class="status-badge status-idle">don\'t have any inprogress task</span>';
+        }
 
-            if (employees.length === 0) {
-                html = '<tr><td colspan="8" style="text-align: center; padding: 30px; color: #94a3b8;">No employees found.</td></tr>';
+        // 4. Build the row
+        html += '<tr>' +
+            '<td style="text-align:center; color:#64748b;">' + serialNo + '</td>' +
+            '<td>' + empId + '</td>' +
+            '<td><span class="emp-name">' + emp.username + '</span></td>' +
+            '<td style="text-align:center;">' + statusBadge + '</td>' +
+            '<td>' + projectNames + '</td>' +
+            '<td>' + taskNames + '</td>' +
+            '<td>' + startDates + '</td>' +
+            '<td>' + dueDates + '</td>' +
+        '</tr>';
+    }
+
+    // 5. Put all rows into the table
+    tbody.innerHTML = html;
+}
+
+        // --- Inactivity Auto-Logout (10 mins for Employees, Long Time for Admins) ---
+        (function () {
+            const userRole = "{{ request.session.role|default:'' }}".toUpperCase();
+            const userType = "{{ request.session.user_type|default:'' }}".toUpperCase();
+            const isAdmin = (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userType === 'ADMIN' || userType === 'SUPERADMIN');
+
+            if (isAdmin) return; // Admins stay logged in
+
+            const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+            let timer;
+
+            function resetTimer() {
+                clearTimeout(timer);
+                timer = setTimeout(function () {
+                    alert('You have been inactive for 10 minutes. You will be logged out.');
+                    window.location.href = "{% url 'logout_view' %}";
+                }, INACTIVITY_TIMEOUT);
             }
 
-            tbody.innerHTML = html;
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-            return String(text).replace(/[&<>"']/g, m => map[m]);
-        }
+            window.onload = resetTimer;
+            document.onmousemove = resetTimer;
+            document.onkeydown = resetTimer;
+            document.onclick = resetTimer;
+            document.onscroll = resetTimer;
+        })();
     </script>
 </body>
 </html>

@@ -47,7 +47,7 @@
             <div class="user-info">
                 Welcome, <strong>{{ request.session.user_name|default:"Admin" }}</strong>
             </div>
-            <a href="{% url 'loginpage' %}" class="logout-link">Logout</a>
+            <a href="{% url 'logout_view' %}" class="logout-link">Logout</a>
         </div>
 
         <!-- Content Body -->
@@ -61,6 +61,39 @@
 
     </div>
 
+    <!-- Inactivity Auto-Logout Script (10 mins for Employees, Long Time for Admins) -->
+    <script>
+        (function () {
+            // Check if current user is an Admin
+            const userRole = "{{ request.session.role|default:'' }}".toUpperCase();
+            const userType = "{{ request.session.user_type|default:'' }}".toUpperCase();
+            const isAdmin = (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userType === 'ADMIN' || userType === 'SUPERADMIN');
+
+            // If Admin, stay logged in (no 10-minute timeout)
+            if (isAdmin) {
+                return;
+            }
+
+            // 10 minutes of inactivity = 10 * 60 * 1000 milliseconds
+            const INACTIVITY_TIMEOUT = 10 * 60 * 1000 ;
+            let timer;
+
+            function resetTimer() {
+                clearTimeout(timer);
+                timer = setTimeout(function () {
+                    
+                    window.location.href = "{% url 'logout_view' %}";
+                }, INACTIVITY_TIMEOUT);
+            }
+
+            // Reset timer whenever user moves mouse, types, clicks, or scrolls
+            window.onload = resetTimer;
+            document.onmousemove = resetTimer;
+            document.onkeydown = resetTimer;
+            document.onclick = resetTimer;
+            document.onscroll = resetTimer;
+        })();
+    </script>
 </body>
 
 </html>
