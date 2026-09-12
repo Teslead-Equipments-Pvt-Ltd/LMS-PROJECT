@@ -85,7 +85,7 @@ def update_task_api(request):
             current_status = status or 'Not Worked'
 
         if is_employee and current_status == 'Completed':
-            return JsonResponse({'status': 'error', 'message': 'Completed tasks are only changed by Admin.'}, status=400)
+            return JsonResponse({'status': 'error', 'message': 'You have already completed this task. Status changes are locked.'}, status=400)
 
         # 1. Update task details in DB
         update_task_service(
