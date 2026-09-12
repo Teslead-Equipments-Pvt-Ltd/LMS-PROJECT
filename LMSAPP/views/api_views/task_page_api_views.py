@@ -19,10 +19,11 @@ from LMSAPP.services.task_request_service import (
 def get_tasks_api(request):
     try:
         user_name = request.session.get('user_name')
+        employee_id = request.session.get('employee_id')
         user_type = str(request.session.get('user_type', '')).lower()
         user_role = str(request.session.get('role', '')).lower()
         if user_type == 'employee' or user_role == 'employee':
-            tasks = get_employee_tasks(user_name)
+            tasks = get_employee_tasks(username=user_name, employee_id=employee_id)
         else:
             tasks = get_all_tasks_service()
         return JsonResponse({'status': 'success', 'data': tasks})

@@ -1253,7 +1253,7 @@
 
     async function loadLiveTasks() {
         // If a modal or SweetAlert is currently open, avoid interfering with user input
-        if (Swal.isVisible()) return;
+        if (typeof Swal !== 'undefined' && Swal.isVisible()) return;
         const addModal = document.getElementById('addTaskModal');
         const editModal = document.getElementById('editTaskModal');
         if ((addModal && addModal.style.display === 'flex') || (editModal && editModal.style.display === 'flex')) {
@@ -1281,11 +1281,19 @@
                         }
 
                         if (select && document.activeElement !== select) {
-                            const currentVal = select.value;
-                            const targetVal = (task.status === 'InProgress') ? 'In Progress' : (task.status || 'Not Worked');
-                            const normalizedCurrent = (currentVal === 'InProgress') ? 'In Progress' : currentVal;
+                            let targetVal = task.status || 'Not Worked';
+                            if (targetVal.toLowerCase() === 'inprogress' || targetVal.toLowerCase() === 'in progress') {
+                                targetVal = 'In Progress';
+                            } else if (targetVal.toLowerCase() === 'completed') {
+                                targetVal = 'Completed';
+                            } else if (targetVal.toLowerCase() === 'on hold' || targetVal.toLowerCase() === 'onhold') {
+                                targetVal = 'On Hold';
+                            } else {
+                                targetVal = 'Not Worked';
+                            }
 
-                            if (normalizedCurrent !== targetVal) {
+                            const currentVal = select.value;
+                            if (currentVal !== targetVal) {
                                 select.value = targetVal;
                                 select.dataset.previousValue = targetVal;
                                 updateStatusClass(select);
