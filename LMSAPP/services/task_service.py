@@ -24,6 +24,7 @@ def tasks_table():
             cursor.execute("ALTER TABLE tasks ADD COLUMN created_date VARCHAR(50) DEFAULT NULL;")
         except Exception:
             pass
+        
 
 
 def get_all_tasks_service():

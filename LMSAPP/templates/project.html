@@ -94,7 +94,7 @@
                     <td>
                         <!-- Status Dropdown inside the project table -->
                         <select class="status-select" onchange="handleInlineStatusChange(this, {{ project.id }})">
-                            <option value="Not Worked" {% if project.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
+                            <option value="Not Worked" {% if project.status == "Not Worked" %}selected{% endif %} {% if project.status == "In Progress" or project.status == "Completed" %}disabled style="color: #94a3b8; background-color: #f1f5f9;"{% endif %}>Not Worked</option>
                             <option value="In Progress" {% if project.status == "In Progress" %}selected{% endif %}>In Progress</option>
                             <option value="On Hold" {% if project.status == "On Hold" %}selected{% endif %}>On Hold</option>
                             <option value="Completed" {% if project.status == "Completed" %}selected{% endif %}>Completed</option>
@@ -558,6 +558,12 @@
         document.getElementById('edit_created_date').value = createdDate || '';
         document.getElementById('edit_completion_date').value = completionDate || '';
         document.getElementById('edit_due_date').value = dueDate || '';
+
+        const notWorkedOpt = document.querySelector('#edit_status option[value="Not Worked"]');
+        if (notWorkedOpt) {
+            notWorkedOpt.disabled = (status === 'In Progress' || status === 'Completed');
+        }
+
         document.getElementById('editProjectModal').style.display = 'flex';
     }
 
