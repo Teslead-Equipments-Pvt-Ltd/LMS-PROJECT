@@ -23,7 +23,7 @@ api_patterns = [
     path('', include('LMSAPP.urls.api_urls.task_api_urls')),
     path('', include('LMSAPP.urls.api_urls.employee_api_urls')),
     path('', include('LMSAPP.urls.api_urls.task_request_api_urls')),
-    # path('', include('LMSAPP.urls.api_urls.notification_api_urls')),
+    path('', include('LMSAPP.urls.api_urls.notification_api_urls')),
 ]
 
 urlpatterns = page_patterns + api_patterns

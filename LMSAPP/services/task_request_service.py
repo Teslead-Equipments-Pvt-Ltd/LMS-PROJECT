@@ -1,6 +1,8 @@
+import json
 import datetime
 from django.db import connection
 from LMSAPP.services.notification_service import create_notification_service
+
 
 
 def ensure_task_requests_table():
@@ -73,12 +75,11 @@ def create_task_request_service(task_id, task_name, employee_name, active_task_n
 
     return request_id, True, "Approval request sent to Admin."
 
-
 def approve_task_request_service(request_id, admin_name='Admin'):
     """
     Approves a task request:
     1. Sets task request status to 'Approved'
-    2. Updates the task in 'tasks' table to 'In Progress'
+    2. Updates the task status in 'tasks' table to 'In Progress'
     3. Sends notification to employee
     """
     ensure_task_requests_table()
@@ -99,7 +100,7 @@ def approve_task_request_service(request_id, admin_name='Admin'):
         # 1. Mark request as Approved
         cursor.execute("UPDATE task_requests SET status = 'Approved' WHERE id = %s", [request_id])
 
-        # 2. Set task to In Progress in tasks table
+        # 2. Set status to In Progress in tasks table
         today_date = datetime.date.today().strftime("%Y-%m-%d")
         cursor.execute("""
             UPDATE tasks
@@ -121,7 +122,6 @@ def approve_task_request_service(request_id, admin_name='Admin'):
     )
 
     return True, f"Request approved. Task '{task_name}' is now In Progress."
-
 
 def reject_task_request_service(request_id, admin_name='Admin', remarks=''):
     """

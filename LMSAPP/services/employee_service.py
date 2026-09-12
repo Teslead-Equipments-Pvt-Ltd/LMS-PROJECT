@@ -71,7 +71,6 @@ def add_employee_service(employee_id, username, role, password):
 
 
 def get_employee_tasks(username=None, employee_id=None):
-    import json
     tasks_table()
 
     if employee_id and not username:
@@ -86,7 +85,7 @@ def get_employee_tasks(username=None, employee_id=None):
 
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, task_name, project_name, created_date, due_date, status, employee_name, employee_status
+            SELECT id, task_name, project_name, created_date, due_date, status, employee_name
             FROM tasks 
             WHERE FIND_IN_SET(%s, REPLACE(employee_name, ', ', ',')) > 0 OR employee_name = %s
             ORDER BY id DESC
@@ -95,28 +94,16 @@ def get_employee_tasks(username=None, employee_id=None):
         
         tasks = []
         for index, row in enumerate(rows, start=1):
-            emp_status_raw = row[7]
-            emp_status_dict = {}
-            if emp_status_raw:
-                try:
-                    emp_status_dict = json.loads(emp_status_raw)
-                except Exception:
-                    emp_status_dict = {}
-
-            emp_status = emp_status_dict.get(username, row[5] or 'Not Worked')
-
             tasks.append({
                 's_no': index,
                 'id': row[0],
                 'task_name': row[1],
                 'project_name': row[2],
-                'created_date': row[3],
-                'due_date': row[4],
-                'status': emp_status,
-                'overall_status': row[5],
-                'employee_name': row[6],
-                'employee_status': emp_status_dict,
-                'employee_status_json': json.dumps(emp_status_dict)
+                'created_date': row[3] or '',
+                'due_date': row[4] or '',
+                'status': row[5] or 'Not Worked',
+                'employee_name': row[6] or ''
             })
     return tasks
+
 

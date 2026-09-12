@@ -81,7 +81,7 @@
                 <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}"
                     data-created-date="{{ task.created_date }}" data-due-date="{{ task.due_date }}"
                     data-employee="{{ task.employee_name }}" data-module-type="{{ task.module_type }}"
-                    data-employee-status="{{ task.employee_status_json }}" id="row-{{ task.id }}">
+                    id="row-{{ task.id }}">
                     {% if request.session.user_type|lower == "superadmin" or request.session.user_type|lower == "admin" %}
                     <td style="text-align: center;">
                         <input type="checkbox" class="row-checkbox" value="{{ task.id }}" onclick="updateBulk()">
@@ -1203,65 +1203,37 @@
         const taskName = row.querySelector('strong')?.textContent.trim() || 'N/A';
         const projectName = row.dataset.project || 'N/A';
         const employeeNameStr = row.dataset.employee || '';
-        const empStatusRaw = row.dataset.employeeStatus || '{}';
+        const selectElem = row.querySelector('.status-select');
+        const currentTaskStatus = selectElem ? selectElem.value : 'Not Worked';
 
         document.getElementById('empModalTaskName').textContent = taskName;
         document.getElementById('empModalProjectName').textContent = projectName;
-
-        let empStatusDict = {};
-        try {
-            empStatusDict = JSON.parse(empStatusRaw);
-        } catch (e) {
-            empStatusDict = {};
-        }
-
-        const currentUserType = "{{ request.session.user_type|default:''|lower }}";
-        const currentUserRole = "{{ request.session.role|default:''|lower }}";
-        const isAdminOrSuper = (currentUserType === 'admin' || currentUserType === 'superadmin' || currentUserRole === 'admin' || currentUserRole === 'superadmin');
 
         const assignedEmps = employeeNameStr.split(',').map(e => e.trim()).filter(e => e.length > 0);
         const tbody = document.getElementById('empStatusTableBody');
         tbody.innerHTML = '';
 
-        if (assignedEmps.length === 1) {
+        if (assignedEmps.length === 0) {
             tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 15px;">No assigned employees found.</td></tr>`;
         } else {
+            let badgeClass = 'emp-status-not-worked';
+            if (currentTaskStatus === 'Completed') {
+                badgeClass = 'emp-status-completed';
+            } else if (currentTaskStatus === 'In Progress' || currentTaskStatus === 'InProgress') {
+                badgeClass = 'emp-status-in-progress';
+            } else if (currentTaskStatus === 'On Hold') {
+                badgeClass = 'emp-status-onhold';
+            }
+
             assignedEmps.forEach((empName, index) => {
-                const status = empStatusDict[empName] || 'Not Worked';
-
-                let badgeClass = 'emp-status-not-worked';
-                if (status === 'Completed') {
-                    badgeClass = 'emp-status-completed';
-                } else if (status === 'In Progress' || status === 'InProgress') {
-                    badgeClass = 'emp-status-in-progress';
-                } else if (status === 'On Hold') {
-                    badgeClass = 'emp-status-onhold';
-                }
-
                 const tr = document.createElement('tr');
-                if (isAdminOrSuper) {
-                    tr.innerHTML = `
-                        <td style="text-align: center;">${index + 1}</td>
-                        <td><strong>${empName}</strong></td>
-                        <td style="text-align: center;">
-                            <select class="status-select status-${status === 'Completed' ? 'completed' : (status === 'In Progress' || status === 'InProgress' ? 'in-progress' : (status === 'On Hold' ? 'onhold' : 'not-worked'))}"
-                                    onchange="updateIndividualEmployeeStatus(${taskId}, '${empName}', this)">
-                                <option value="Not Worked" ${status === 'Not Worked' ? 'selected' : ''}>Not Worked</option>
-                                <option value="In Progress" ${status === 'In Progress' || status === 'InProgress' ? 'selected' : ''}>InProgress</option>
-                                <option value="On Hold" ${status === 'On Hold' ? 'selected' : ''}>On Hold</option>
-                                <option value="Completed" ${status === 'Completed' ? 'selected' : ''}>Completed</option>
-                            </select>
-                        </td>
-                    `;
-                } else {
-                    tr.innerHTML = `
-                        <td style="text-align: center;">${index + 1}</td>
-                        <td><strong>${empName}</strong></td>
-                        <td style="text-align: center;">
-                            <span class="emp-status-badge ${badgeClass}">${status}</span>
-                        </td>
-                    `;
-                }
+                tr.innerHTML = `
+                    <td style="text-align: center;">${index + 1}</td>
+                    <td><strong>${empName}</strong></td>
+                    <td style="text-align: center;">
+                        <span class="emp-status-badge ${badgeClass}">${currentTaskStatus}</span>
+                    </td>
+                `;
                 tbody.appendChild(tr);
             });
         }
@@ -1274,52 +1246,66 @@
         currentEmpModalTaskId = null;
     }
 
-    async function updateIndividualEmployeeStatus(taskId, empName, selectElem) {
-        const newStatus = selectElem.value;
-        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    // 10. Live Auto-Update Polling (Every 2 seconds)
+    setInterval(loadLiveTasks, 2000);
 
-        updateStatusClass(selectElem);
+    async function loadLiveTasks() {
+        // If a modal or SweetAlert is currently open, avoid interfering with user input
+        if (Swal.isVisible()) return;
+        const addModal = document.getElementById('addTaskModal');
+        const editModal = document.getElementById('editTaskModal');
+        if ((addModal && addModal.style.display === 'flex') || (editModal && editModal.style.display === 'flex')) {
+            return;
+        }
 
         try {
-            const response = await fetch('/api/tasks/update/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
-                body: JSON.stringify({
-                    id: taskId,
-                    target_employee: empName,
-                    target_status: newStatus
-                })
-            });
+            const response = await fetch('/api/tasks/');
             const data = await response.json();
-            if (response.ok && data.status === 'success') {
-                const row = document.getElementById(`row-${taskId}`);
-                if (row) {
-                    let empStatusDict = {};
-                    try {
-                        empStatusDict = JSON.parse(row.dataset.employeeStatus || '{}');
-                    } catch (e) {
-                        empStatusDict = {};
+
+            if (data.status === 'success' && Array.isArray(data.data)) {
+                let hasChanges = false;
+                const tasks = data.data;
+
+                tasks.forEach(task => {
+                    const row = document.getElementById(`row-${task.id}`);
+                    if (row) {
+                        const select = row.querySelector('.status-select');
+                        const createdCell = document.getElementById(`created-date-${task.id}`);
+
+                        if (createdCell && task.created_date && createdCell.textContent.trim() !== task.created_date) {
+                            createdCell.textContent = task.created_date;
+                            createdCell.dataset.value = task.created_date;
+                            row.dataset.createdDate = task.created_date;
+                        }
+
+                        if (select && document.activeElement !== select) {
+                            const currentVal = select.value;
+                            const targetVal = (task.status === 'InProgress') ? 'In Progress' : (task.status || 'Not Worked');
+                            const normalizedCurrent = (currentVal === 'InProgress') ? 'In Progress' : currentVal;
+
+                            if (normalizedCurrent !== targetVal) {
+                                select.value = targetVal;
+                                select.dataset.previousValue = targetVal;
+                                updateStatusClass(select);
+                                hasChanges = true;
+
+                                const currentUserType = "{{ request.session.user_type|default:''|lower }}";
+                                const currentUserRole = "{{ request.session.role|default:''|lower }}";
+                                const isEmp = (currentUserType === 'employee' || currentUserRole === 'employee');
+                                if (isEmp) {
+                                    select.disabled = (targetVal === 'Completed');
+                                }
+                            }
+                        }
                     }
-                    empStatusDict[empName] = newStatus;
-                    row.dataset.employeeStatus = JSON.stringify(empStatusDict);
-                }
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
-                    text: data.message || 'Failed to update employee status.',
-                    confirmButtonText: 'OK',
-                    width: '350px'
                 });
+
+                if (hasChanges) {
+                    filterTasks(false);
+                }
             }
         } catch (err) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Error!',
-                text: 'Network error while updating employee status.',
-                confirmButtonText: 'OK',
-                width: '350px'
-            });
+            console.log('Error polling live tasks:', err);
         }
     }
 

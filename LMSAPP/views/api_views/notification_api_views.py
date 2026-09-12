@@ -54,16 +54,18 @@ def send_notification(task_id, task_name, status, employee_name, updated_by=None
 
     return True
 
-# def get_notifications_api(request):
-#     """
-#     API view to fetch all notifications for the current logged-in user or admin.
-#     """
-#     try:
-#         current_user = request.session.get('user_name')
-#         current_role = request.session.get('role', '')
-#         is_admin = current_role in ['ADMIN', 'SUPER_ADMIN']
+def get_notifications_api(request):
+    """
+    API view to fetch all notifications for the current logged-in user or admin.
+    """
+    try:
+        current_user = request.session.get('user_name')
+        current_role = str(request.session.get('role', '')).upper()
+        current_type = str(request.session.get('user_type', '')).upper()
+        is_admin = (current_role in ['ADMIN', 'SUPER_ADMIN']) or (current_type in ['ADMIN', 'SUPERADMIN'])
 
-#         notifications = get_notifications_by_user(recipient=current_user, is_admin=is_admin)
-#         return JsonResponse({'status': 'success', 'data': notifications})
-#     except Exception as e:
-#         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        notifications = get_notifications_by_user(recipient=current_user, is_admin=is_admin)
+        return JsonResponse({'status': 'success', 'data': notifications})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+

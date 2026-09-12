@@ -5,7 +5,8 @@ from LMSAPP.views.api_views.notification_api_views import send_notification
 from LMSAPP.services.task_request_service import (
     create_task_request_service,
     approve_task_request_service,
-    reject_task_request_service
+    reject_task_request_service,
+    get_all_task_requests_service
 )
 
 
@@ -78,3 +79,23 @@ def action_task_request_api(request):
             return JsonResponse({'status': 'error', 'message': message}, status=400)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def get_task_requests_live_api(request):
+    """
+    API endpoint to fetch task requests for live updates.
+    """
+    try:
+        user_role = str(request.session.get('role', '')).upper()
+        user_type = str(request.session.get('user_type', '')).upper()
+        is_admin = (user_role in ['ADMIN', 'SUPER_ADMIN']) or (user_type in ['ADMIN', 'SUPERADMIN'])
+        employee_name = request.session.get('user_name')
+
+        requests_list = get_all_task_requests_service(employee_name=employee_name, is_admin=is_admin)
+        return JsonResponse({
+            'status': 'success',
+            'data': requests_list,
+            'is_admin': is_admin
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
