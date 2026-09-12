@@ -81,7 +81,7 @@
                 <tr data-id="{{ task.id }}" data-project="{{ task.project_name }}"
                     data-created-date="{{ task.created_date }}" data-due-date="{{ task.due_date }}"
                     data-employee="{{ task.employee_name }}" data-module-type="{{ task.module_type }}"
-                    id="row-{{ task.id }}">
+                    data-employee-status="{{ task.employee_status_json }}" id="row-{{ task.id }}">
                     {% if request.session.user_type|lower == "superadmin" or request.session.user_type|lower == "admin" %}
                     <td style="text-align: center;">
                         <input type="checkbox" class="row-checkbox" value="{{ task.id }}" onclick="updateBulk()">
@@ -1205,37 +1205,65 @@
         const taskName = row.querySelector('strong')?.textContent.trim() || 'N/A';
         const projectName = row.dataset.project || 'N/A';
         const employeeNameStr = row.dataset.employee || '';
-        const selectElem = row.querySelector('.status-select');
-        const currentTaskStatus = selectElem ? selectElem.value : 'Not Worked';
+        const empStatusRaw = row.dataset.employeeStatus || '{}';
 
         document.getElementById('empModalTaskName').textContent = taskName;
         document.getElementById('empModalProjectName').textContent = projectName;
+
+        let empStatusDict = {};
+        try {
+            empStatusDict = JSON.parse(empStatusRaw);
+        } catch (e) {
+            empStatusDict = {};
+        }
+
+        const currentUserType = "{{ request.session.user_type|default:''|lower }}";
+        const currentUserRole = "{{ request.session.role|default:''|lower }}";
+        const isAdminOrSuper = (currentUserType === 'admin' || currentUserType === 'superadmin' || currentUserRole === 'admin' || currentUserRole === 'superadmin');
 
         const assignedEmps = employeeNameStr.split(',').map(e => e.trim()).filter(e => e.length > 0);
         const tbody = document.getElementById('empStatusTableBody');
         tbody.innerHTML = '';
 
-        if (assignedEmps.length === 0) {
+        if (assignedEmps.length === 1) {
             tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8; padding: 15px;">No assigned employees found.</td></tr>`;
         } else {
-            let badgeClass = 'emp-status-not-worked';
-            if (currentTaskStatus === 'Completed') {
-                badgeClass = 'emp-status-completed';
-            } else if (currentTaskStatus === 'In Progress' || currentTaskStatus === 'InProgress') {
-                badgeClass = 'emp-status-in-progress';
-            } else if (currentTaskStatus === 'On Hold') {
-                badgeClass = 'emp-status-onhold';
-            }
-
             assignedEmps.forEach((empName, index) => {
+                const status = empStatusDict[empName] || 'Not Worked';
+
+                let badgeClass = 'emp-status-not-worked';
+                if (status === 'Completed') {
+                    badgeClass = 'emp-status-completed';
+                } else if (status === 'In Progress' || status === 'InProgress') {
+                    badgeClass = 'emp-status-in-progress';
+                } else if (status === 'On Hold') {
+                    badgeClass = 'emp-status-onhold';
+                }
+
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="text-align: center;">${index + 1}</td>
-                    <td><strong>${empName}</strong></td>
-                    <td style="text-align: center;">
-                        <span class="emp-status-badge ${badgeClass}">${currentTaskStatus}</span>
-                    </td>
-                `;
+                if (isAdminOrSuper) {
+                    tr.innerHTML = `
+                        <td style="text-align: center;">${index + 1}</td>
+                        <td><strong>${empName}</strong></td>
+                        <td style="text-align: center;">
+                            <select class="status-select status-${status === 'Completed' ? 'completed' : (status === 'In Progress' || status === 'InProgress' ? 'in-progress' : (status === 'On Hold' ? 'onhold' : 'not-worked'))}"
+                                    onchange="updateIndividualEmployeeStatus(${taskId}, '${empName}', this)">
+                                <option value="Not Worked" ${status === 'Not Worked' ? 'selected' : ''}>Not Worked</option>
+                                <option value="In Progress" ${status === 'In Progress' || status === 'InProgress' ? 'selected' : ''}>InProgress</option>
+                                <option value="On Hold" ${status === 'On Hold' ? 'selected' : ''}>On Hold</option>
+                                <option value="Completed" ${status === 'Completed' ? 'selected' : ''}>Completed</option>
+                            </select>
+                        </td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td style="text-align: center;">${index + 1}</td>
+                        <td><strong>${empName}</strong></td>
+                        <td style="text-align: center;">
+                            <span class="emp-status-badge ${badgeClass}">${status}</span>
+                        </td>
+                    `;
+                }
                 tbody.appendChild(tr);
             });
         }
@@ -1246,6 +1274,55 @@
     function closeEmployeeStatusModal() {
         document.getElementById('employeeStatusModal').style.display = 'none';
         currentEmpModalTaskId = null;
+    }
+
+    async function updateIndividualEmployeeStatus(taskId, empName, selectElem) {
+        const newStatus = selectElem.value;
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+        updateStatusClass(selectElem);
+
+        try {
+            const response = await fetch('/api/tasks/update/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                body: JSON.stringify({
+                    id: taskId,
+                    target_employee: empName,
+                    target_status: newStatus
+                })
+            });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                const row = document.getElementById(`row-${taskId}`);
+                if (row) {
+                    let empStatusDict = {};
+                    try {
+                        empStatusDict = JSON.parse(row.dataset.employeeStatus || '{}');
+                    } catch (e) {
+                        empStatusDict = {};
+                    }
+                    empStatusDict[empName] = newStatus;
+                    row.dataset.employeeStatus = JSON.stringify(empStatusDict);
+                }
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to update employee status.',
+                    confirmButtonText: 'OK',
+                    width: '350px'
+                });
+            }
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'Network error while updating employee status.',
+                confirmButtonText: 'OK',
+                width: '350px'
+            });
+        }
     }
 
     // 10. Live Auto-Update Polling (Every 2 seconds)

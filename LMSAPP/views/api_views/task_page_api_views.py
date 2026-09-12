@@ -8,7 +8,6 @@ from LMSAPP.services.task_service import (
     delete_task_service,
     bulk_delete_tasks_service
 )
-from LMSAPP.services.employee_service import get_employee_tasks
 from LMSAPP.views.api_views.notification_api_views import send_notification
 from LMSAPP.services.task_request_service import (
     create_task_request_service,
@@ -17,24 +16,15 @@ from LMSAPP.services.task_request_service import (
 )
 
 def get_tasks_api(request):
+    
     try:
-        user_name = request.session.get('user_name')
-        employee_id = request.session.get('employee_id')
-        user_type = str(request.session.get('user_type', '')).lower()
-        user_role = str(request.session.get('role', '')).lower()
-        if user_type == 'employee' or user_role == 'employee':
-            tasks = get_employee_tasks(username=user_name, employee_id=employee_id)
-        else:
-            tasks = get_all_tasks_service()
-        response = JsonResponse({'status': 'success', 'data': tasks})
-        response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-        response['Pragma'] = 'no-cache'
-        response['Expires'] = '0'
-        return response
+        tasks = get_all_tasks_service()
+        return JsonResponse({'status': 'success', 'data': tasks})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def add_task_api(request):
+ 
     if request.method != 'POST':
         return JsonResponse({'message': 'Method not allowed'}, status=405)
     try:
@@ -65,6 +55,9 @@ def update_task_api(request):
         due_date = body.get('due_date', '').strip()
         status = body.get('status', '').strip()
         employee_name = body.get('employee_name', '').strip()
+        employee_status = body.get('employee_status')
+        target_employee = body.get('target_employee')
+        target_status = body.get('target_status')
        
         if not task_id:
             return JsonResponse({'status': 'error', 'message': 'Task ID is required.'}, status=400)
@@ -75,7 +68,7 @@ def update_task_api(request):
         is_employee = (user_role == 'employee' or user_type == 'employee')
 
         with connection.cursor() as cursor:
-            cursor.execute("SELECT task_name, project_name, due_date, status, employee_name, created_date FROM tasks WHERE id = %s", [task_id])
+            cursor.execute("SELECT task_name, project_name, due_date, status, employee_name, created_date, employee_status FROM tasks WHERE id = %s", [task_id])
             row = cursor.fetchone()
 
         if row:
@@ -86,16 +79,34 @@ def update_task_api(request):
             if not employee_name: employee_name = row[4]
             if not created_date: created_date = row[5]
             current_status = row[3]
+            current_emp_status_raw = row[6]
         else:
             current_status = status or 'Not Worked'
+            current_emp_status_raw = None
 
-        if is_employee and current_status == 'Completed':
-            return JsonResponse({'status': 'error', 'message': 'You have already completed this task. Status changes are locked.'}, status=400)
+        current_emp_status_dict = {}
+        if current_emp_status_raw:
+            try:
+                current_emp_status_dict = json.loads(current_emp_status_raw)
+            except Exception:
+                current_emp_status_dict = {}
+
+        if is_employee:
+            user_individual_status = current_emp_status_dict.get(updated_by)
+            if user_individual_status == 'Completed':
+                return JsonResponse({'status': 'error', 'message': 'You have already completed this task. Status changes are locked.'}, status=400)
+
+            if updated_by:
+                current_emp_status_dict[updated_by] = status
+                employee_status = current_emp_status_dict
+        elif target_employee and target_status:
+            current_emp_status_dict[target_employee] = target_status
+            employee_status = current_emp_status_dict
 
         # 1. Update task details in DB
         update_task_service(
             task_id, task_name, project_name, due_date, status, employee_name,
-            created_date=created_date, updated_by=updated_by, user_role=user_role
+            created_date=created_date, employee_status=employee_status
         )
 
         # 2. Send notification
@@ -111,7 +122,6 @@ def update_task_api(request):
         return JsonResponse({'status': 'success', 'message': 'Task updated successfully.'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
 
 def delete_task_api(request):
    
