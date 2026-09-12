@@ -26,7 +26,11 @@ def get_tasks_api(request):
             tasks = get_employee_tasks(username=user_name, employee_id=employee_id)
         else:
             tasks = get_all_tasks_service()
-        return JsonResponse({'status': 'success', 'data': tasks})
+        response = JsonResponse({'status': 'success', 'data': tasks})
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        return response
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 

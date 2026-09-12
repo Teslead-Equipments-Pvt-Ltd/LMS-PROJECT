@@ -1261,7 +1261,10 @@
         }
 
         try {
-            const response = await fetch('/api/tasks/');
+            const response = await fetch('/api/tasks/?_t=' + new Date().getTime(), {
+                cache: 'no-store',
+                headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+            });
             const data = await response.json();
 
             if (data.status === 'success' && Array.isArray(data.data)) {
@@ -1280,7 +1283,7 @@
                             row.dataset.createdDate = task.created_date;
                         }
 
-                        if (select && document.activeElement !== select) {
+                        if (select) {
                             let targetVal = task.status || 'Not Worked';
                             if (targetVal.toLowerCase() === 'inprogress' || targetVal.toLowerCase() === 'in progress') {
                                 targetVal = 'In Progress';
@@ -1297,6 +1300,7 @@
                                 select.value = targetVal;
                                 for (let i = 0; i < select.options.length; i++) {
                                     if (select.options[i].value.toLowerCase() === targetVal.toLowerCase() || (targetVal === 'In Progress' && select.options[i].value === 'InProgress')) {
+                                        select.options[i].selected = true;
                                         select.selectedIndex = i;
                                         break;
                                     }

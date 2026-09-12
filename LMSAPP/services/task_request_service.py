@@ -112,6 +112,11 @@ def approve_task_request_service(request_id, admin_name='Admin'):
             WHERE id = %s
         """, [today_date, task_id])
 
+    try:
+        connection.commit()
+    except Exception:
+        pass
+
     # 3. Notify the employee that request was approved
     create_notification_service(
         recipient=employee_name,
@@ -150,6 +155,11 @@ def reject_task_request_service(request_id, admin_name='Admin', remarks=''):
             SET status = 'Rejected', admin_remarks = %s 
             WHERE id = %s
         """, [remarks, request_id])
+
+    try:
+        connection.commit()
+    except Exception:
+        pass
 
     # 2. Notify the employee that request was rejected
     create_notification_service(
