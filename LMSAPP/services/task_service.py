@@ -49,7 +49,7 @@ def get_all_tasks_service():
             'project_name': row[2],
             'created_date': row[3] or '',
             'due_date': row[4] or '',
-            'status': row[5] or 'Not Worked',
+            'status': row[5],
             'employee_name': row[6] or ''
         })
     return tasks
