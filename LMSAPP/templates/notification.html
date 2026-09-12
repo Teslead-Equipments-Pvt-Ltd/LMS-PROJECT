@@ -340,5 +340,26 @@
             });
         }
     }
+
+    // Live auto-polling every 2 seconds
+    let lastNotifCount = document.querySelectorAll('.notification-row').length;
+    setInterval(loadLiveNotifications, 2000);
+
+    async function loadLiveNotifications() {
+        if (Swal.isVisible()) return;
+
+        try {
+            const response = await fetch('/api/notifications/');
+            const data = await response.json();
+
+            if (data.status === 'success' && Array.isArray(data.data)) {
+                if (data.data.length !== lastNotifCount) {
+                    location.reload();
+                }
+            }
+        } catch (e) {
+            console.log('Live notifications polling error:', e);
+        }
+    }
 </script>
 {% endblock %}

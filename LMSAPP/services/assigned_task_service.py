@@ -9,6 +9,10 @@ def get_live_employee_inprogress_tasks():
     so they can be displayed on the same line.
     """
     tasks_table()
+    try:
+        connection.commit()
+    except Exception:
+        pass
     with connection.cursor() as cursor:
         # Fetch all users
         cursor.execute("""

@@ -50,7 +50,7 @@
             </thead>
             <tbody id="requestTableBody">
                 {% for req in task_requests %}
-                <tr class="request-row" data-status="{{ req.status|lower }}">
+                <tr class="request-row" id="request-row-{{ req.id }}" data-status="{{ req.status|lower }}">
                     <td style="text-align: center;" class="row-sno">{{ forloop.counter }}</td>
                     <td><strong>{{ req.employee_name }}</strong></td>
                     <td title="{{ req.task_name }}">
@@ -330,6 +330,46 @@
                 text: 'Could not connect to server.',
                 confirmButtonColor: '#2563eb'
             });
+        }
+    }
+
+    // Live auto-polling every 2 seconds
+    setInterval(loadLiveTaskRequests, 2000);
+
+    async function loadLiveTaskRequests() {
+        if (Swal.isVisible()) return;
+
+        try {
+            const response = await fetch('/api/tasks/requests-live/');
+            const data = await response.json();
+
+            if (data.status === 'success' && Array.isArray(data.data)) {
+                let hasChanges = false;
+                const requests = data.data;
+
+                requests.forEach(req => {
+                    const row = document.getElementById(`request-row-${req.id}`);
+                    if (row) {
+                        const statusBadge = row.querySelector('.status-badge');
+                        if (statusBadge && statusBadge.textContent.trim() !== req.status) {
+                            hasChanges = true;
+                        }
+                    } else {
+                        hasChanges = true;
+                    }
+                });
+
+                const existingRows = document.querySelectorAll('.request-row');
+                if (existingRows.length !== requests.length) {
+                    hasChanges = true;
+                }
+
+                if (hasChanges) {
+                    location.reload();
+                }
+            }
+        } catch (e) {
+            console.log('Live task requests polling error:', e);
         }
     }
 </script>
