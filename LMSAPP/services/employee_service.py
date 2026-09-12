@@ -85,6 +85,11 @@ def get_employee_tasks(username=None, employee_id=None):
 
     clean_user = username.strip().lower()
 
+    try:
+        connection.commit()
+    except Exception:
+        pass
+
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT id, task_name, project_name, created_date, due_date, status, employee_name

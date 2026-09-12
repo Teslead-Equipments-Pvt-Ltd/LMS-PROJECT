@@ -1295,6 +1295,12 @@
                             const currentVal = select.value;
                             if (currentVal !== targetVal) {
                                 select.value = targetVal;
+                                for (let i = 0; i < select.options.length; i++) {
+                                    if (select.options[i].value.toLowerCase() === targetVal.toLowerCase() || (targetVal === 'In Progress' && select.options[i].value === 'InProgress')) {
+                                        select.selectedIndex = i;
+                                        break;
+                                    }
+                                }
                                 select.dataset.previousValue = targetVal;
                                 updateStatusClass(select);
                                 hasChanges = true;

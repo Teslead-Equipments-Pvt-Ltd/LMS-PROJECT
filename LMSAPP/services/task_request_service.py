@@ -170,6 +170,10 @@ def get_all_task_requests_service(employee_name=None, is_admin=True):
     - Employees see only their own requests
     """
     ensure_task_requests_table()
+    try:
+        connection.commit()
+    except Exception:
+        pass
 
     with connection.cursor() as cursor:
         if is_admin:

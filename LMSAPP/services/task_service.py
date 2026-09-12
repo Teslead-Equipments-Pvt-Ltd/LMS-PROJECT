@@ -29,6 +29,10 @@ def tasks_table():
 
 def get_all_tasks_service():
     tasks_table()
+    try:
+        connection.commit()
+    except Exception:
+        pass
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT id, task_name, project_name, created_date, due_date, status, employee_name

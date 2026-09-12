@@ -51,6 +51,10 @@ def get_notifications_by_user(recipient=None, is_admin=False):
     Deduplicates task_request notifications so that each task shows only once.
     """
     ensure_notifications_table()
+    try:
+        connection.commit()
+    except Exception:
+        pass
 
     # Step 1: Decide who we are fetching notifications for
     target_user = 'Admin' if is_admin else recipient
