@@ -143,7 +143,7 @@ def update_task_service(task_id, task_name, project_name, due_date, status, empl
         for emp in assigned_list:
             if emp in existing_emp_status_dict:
             
-                if status != current_status and len(assigned_list) == 1:
+                if status != current_status:
                     emp_status_dict[emp] = status
                 else:
                     emp_status_dict[emp] = existing_emp_status_dict[emp]
@@ -154,7 +154,7 @@ def update_task_service(task_id, task_name, project_name, due_date, status, empl
     if statuses:
         if all(s == 'Completed' for s in statuses):
             status = 'Completed'
-        elif any(s in ['In Progress', 'InProgress'] for s in statuses):
+        elif any(s in ['In Progress', 'InProgress', 'Completed'] for s in statuses):
             status = 'In Progress'
         elif any(s == 'On Hold' for s in statuses):
             status = 'On Hold'

@@ -101,8 +101,8 @@
                     <td>
                         <select
                             class="status-select status-{% if task.status == 'Completed' %}completed{% elif task.status == 'In Progress' or task.status == 'InProgress' %}in-progress{% elif task.status == 'On Hold' %}onhold{% else %}not-worked{% endif %}"
-                            onchange="changeStatus(this, {{ task.id }})" {% if
-                            request.session.user_type|lower == "employee" or request.session.role|lower == "employee" %}{% if task.status == "Completed" %}disabled{% endif %}>
+                            onchange="changeStatus(this, {{ task.id }})"
+                            {% if request.session.user_type|lower == "employee" or request.session.role|lower == "employee" %}{% if task.status == "Completed" %}disabled{% endif %}{% endif %}>
                             <option value="Not Worked" class="opt-not-worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
                             <option value="In Progress" class="opt-in-progress" {% if task.status == "In Progress" or task.status == "InProgress" %}selected{% endif %}>InProgress</option>
                             <option value="On Hold" class="opt-onhold" {% if task.status == "On Hold" %}selected{% endif %}>On Hold</option>
@@ -128,9 +128,8 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="{% if request.session.user_type|lower == 'superadmin' or request.session.user_type|lower == 'admin' %}{% else %}{% endif %}"
-                        style="text-align: center; color: #64748b; padding: 25px;">No tasks found. Click"Add New Task"
-                        to create one.</td>
+                    <td colspan="{% if request.session.user_type|lower == 'superadmin' or request.session.user_type|lower == 'admin' %}9{% else %}8{% endif %}"
+                        style="text-align: center; color: #64748b; padding: 25px;">No tasks found. Click "Add New Task" to create one.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -167,7 +166,8 @@
                         </div>
                         <ul class="project-item-list" id="addProjectList">
                             {% for proj in projects %}
-                            <li class="project-item" onclick="selectProjectItem('add', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
+                            <li class="project-item"
+                                onclick="selectProjectItem('add', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
                             {% empty %}
                             <li class="project-item-empty">No projects found</li>
                             {% endfor %}
@@ -240,7 +240,9 @@
                         </div>
                         <ul class="project-item-list" id="editProjectList">
                             {% for proj in projects %}
-                            <li class="project-item" onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
+                            <li class="project-item"
+                                onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{
+                                proj.project_name }}</li>
                             {% empty %}
                             <li class="project-item-empty">No projects found</li>
                             {% endfor %}

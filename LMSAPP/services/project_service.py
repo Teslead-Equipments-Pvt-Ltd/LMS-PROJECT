@@ -58,20 +58,29 @@ def add_project_service(project_name, project_type, status, due_date):
     return True
 
 def update_project_service(project_id, project_name, project_type, status, created_date, completion_date, due_date):
-    
     today_str = datetime.date.today().strftime("%Y-%m-%d")
-    
-   
+
     if status == "In Progress" and not created_date:
         created_date = today_str
     if status == "Completed" and not completion_date:
         completion_date = today_str
 
     with connection.cursor() as cursor:
+        # STEP 1: Get current project status from database
+        cursor.execute("SELECT status FROM projects WHERE id = %s", [project_id])
+        row = cursor.fetchone()
+        old_status = row[0] if row else ""
+
+        # STEP 2: Rule -> Cannot change back to Not Worked from In Progress or Completed
+        if (old_status == "In Progress" or old_status == "Completed") and status == "Not Worked":
+            raise ValueError(f"Project is currently '{old_status}' and cannot be changed back to Not Worked.")
+
+        # STEP 3: Check for duplicate project names
         cursor.execute("SELECT id FROM projects WHERE LOWER(project_name) = LOWER(%s) AND id != %s", [project_name.strip(), project_id])
         if cursor.fetchone():
             raise ValueError(f"Project '{project_name.strip()}' already exists.")
 
+        # STEP 4: Update project in database
         cursor.execute("""
             UPDATE projects
             SET project_name = %s, project_type = %s, status = %s, created_date = %s, completion_date = %s, due_date = %s

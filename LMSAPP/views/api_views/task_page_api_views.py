@@ -84,9 +84,6 @@ def update_task_api(request):
             current_status = status or 'Not Worked'
             current_emp_status_raw = None
 
-        if is_employee and current_status == 'Completed':
-            return JsonResponse({'status': 'error', 'message': 'Completed tasks are only changed by Admin.'}, status=400)
-
         current_emp_status_dict = {}
         if current_emp_status_raw:
             try:
@@ -95,6 +92,10 @@ def update_task_api(request):
                 current_emp_status_dict = {}
 
         if is_employee:
+            user_individual_status = current_emp_status_dict.get(updated_by)
+            if user_individual_status == 'Completed':
+                return JsonResponse({'status': 'error', 'message': 'You have already completed this task. Status changes are locked.'}, status=400)
+
             if updated_by:
                 current_emp_status_dict[updated_by] = status
                 employee_status = current_emp_status_dict
