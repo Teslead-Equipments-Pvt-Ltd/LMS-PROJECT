@@ -198,11 +198,11 @@
                     <option value="Completed">Completed</option>
                 </select>
             </div>
-            <div class="form-group-modal">
+            <div class="form-group-modal" style="display: none;">
                 <label for="edit_created_date">Created Date</label>
                 <input type="date" id="edit_created_date">
             </div>
-            <div class="form-group-modal">
+            <div class="form-group-modal" style="display: none;">
                 <label for="edit_completion_date">Completion Date</label>
                 <input type="date" id="edit_completion_date">
             </div>
@@ -532,7 +532,7 @@
         const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
         try {
-            await fetch('/api/projects/update/', {
+            const response = await fetch('/api/projects/update/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
                 body: JSON.stringify({
@@ -545,6 +545,16 @@
                     due_date: dueDate
                 })
             });
+            const data = await response.json();
+            if (response.ok && data.status === 'success') {
+                if (newStatus === 'In Progress' || newStatus === 'Completed') {
+                    const notWorkedOpt = selectElem.querySelector('option[value="Not Worked"]');
+                    if (notWorkedOpt) {
+                        notWorkedOpt.disabled = true;
+                    }
+                    row.dataset.status = newStatus;
+                }
+            }
         } catch (err) {
             console.error('Status update error:', err);
         }

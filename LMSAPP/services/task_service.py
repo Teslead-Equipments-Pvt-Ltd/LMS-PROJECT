@@ -154,10 +154,12 @@ def update_task_service(task_id, task_name, project_name, due_date, status, empl
     if statuses:
         if all(s == 'Completed' for s in statuses):
             status = 'Completed'
-        elif any(s in ['In Progress', 'InProgress', 'Completed'] for s in statuses):
+        elif any(s in ['In Progress', 'InProgress'] for s in statuses):
             status = 'In Progress'
         elif any(s == 'On Hold' for s in statuses):
             status = 'On Hold'
+        else:
+            status = 'Not Worked'
 
     emp_status_json = json.dumps(emp_status_dict)
 

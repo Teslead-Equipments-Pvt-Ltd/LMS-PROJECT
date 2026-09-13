@@ -52,12 +52,18 @@ def login_api(request):
             request.session.set_expiry(60 * 60 * 24 * 7)  # 7 days
         else:
             request.session.set_expiry(60 * 10)  # 10 minutes
-
+        user_type = str(user.get('user_type','').lower())
+        user_role= str(user.get('role','').lower())
+        
+        if user_type == 'employee' or user_role == 'employee':
+            redirect_url = '/task/'
+        else:
+            redirect_url = '/dashboard'
         # 6. Success response
         return JsonResponse({
             'status': 'success',
             'message': 'Login successful',
-            'redirect_url': '/task/',
+            'redirect_url': redirect_url,
             'user_name': user.get('user_name'),
             'user_type': user.get('user_type')
         }, status=200)
