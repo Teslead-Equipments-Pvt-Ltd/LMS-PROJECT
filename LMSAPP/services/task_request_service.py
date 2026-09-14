@@ -1,4 +1,3 @@
-import json
 import datetime
 from django.db import connection
 from LMSAPP.services.notification_service import create_notification_service
@@ -112,11 +111,6 @@ def approve_task_request_service(request_id, admin_name='Admin'):
             WHERE id = %s
         """, [today_date, task_id])
 
-    try:
-        connection.commit()
-    except Exception:
-        pass
-
     # 3. Notify the employee that request was approved
     create_notification_service(
         recipient=employee_name,
@@ -156,11 +150,6 @@ def reject_task_request_service(request_id, admin_name='Admin', remarks=''):
             WHERE id = %s
         """, [remarks, request_id])
 
-    try:
-        connection.commit()
-    except Exception:
-        pass
-
     # 2. Notify the employee that request was rejected
     create_notification_service(
         recipient=employee_name,
@@ -180,10 +169,6 @@ def get_all_task_requests_service(employee_name=None, is_admin=True):
     - Employees see only their own requests
     """
     ensure_task_requests_table()
-    try:
-        connection.commit()
-    except Exception:
-        pass
 
     with connection.cursor() as cursor:
         if is_admin:

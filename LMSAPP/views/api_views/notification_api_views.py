@@ -1,4 +1,3 @@
-import json
 from django.http import JsonResponse
 from LMSAPP.services.notification_service import (
     create_notification_service,

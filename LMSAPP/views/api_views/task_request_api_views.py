@@ -1,7 +1,5 @@
 import json
-from django.db import connection
 from django.http import JsonResponse
-from LMSAPP.views.api_views.notification_api_views import send_notification
 from LMSAPP.services.task_request_service import (
     create_task_request_service,
     approve_task_request_service,

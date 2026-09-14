@@ -10,10 +10,7 @@
     <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 
     <div class="notification-topbar">
-        <h2>
-            Notifications 
-            {% comment %} <span class="badge-count" id="totalCountBadge">{{ notifications|length }}</span> {% endcomment %}
-        </h2>
+        <h2>Notifications</h2>
 
         <div class="notification-actions">
             
@@ -42,7 +39,6 @@
                     <th style="width: 110px;">Type</th>
                     <th style="width: 230px;">Title</th>
                     <th>Message</th>
-                    {% comment %} <th style="width: 130px;">Recipient</th> {% endcomment %}
                     <th style="width: 150px; text-align: center;">Date & Time</th>
                     {% if request.session.user_type != 'Employee' %}
                     <th style="width: 170px; text-align: center;">Action</th>
@@ -68,9 +64,6 @@
                     </td>
                     <td title="{{ n.title }}"><strong>{{ n.title }}</strong></td>
                     <td title="{{ n.message }}">{{ n.message }}</td>
-                    {% comment %} <td>
-                        <span class="badge-recipient-tag">{{ n.recipient|default:"-" }}</span>
-                    </td> {% endcomment %}
                     <td style="text-align: center;"><span class="time-text">{{ n.created_at }}</span></td>
                     {% if request.session.user_type != 'Employee' %}
                     <td style="text-align: center;">

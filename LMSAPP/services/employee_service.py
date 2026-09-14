@@ -85,10 +85,6 @@ def get_employee_tasks(username=None, employee_id=None):
 
     clean_user = username.strip().lower()
 
-    try:
-        connection.commit()
-    except Exception:
-        pass
 
     with connection.cursor() as cursor:
         cursor.execute("""
