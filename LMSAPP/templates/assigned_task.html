@@ -256,7 +256,7 @@
             }
         }
 
-        function updateTable(employees) {
+function updateTable(employees) {
     const tbody = document.getElementById('taskTableBody');
     let html = '';
 
@@ -333,7 +333,6 @@
             function resetTimer() {
                 clearTimeout(timer);
                 timer = setTimeout(function () {
-                    alert('You have been inactive for 10 minutes. You will be logged out.');
                     window.location.href = "{% url 'logout_view' %}";
                 }, INACTIVITY_TIMEOUT);
             }
