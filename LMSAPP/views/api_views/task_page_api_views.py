@@ -8,6 +8,7 @@ from LMSAPP.services.task_service import (
     delete_task_service,
     bulk_delete_tasks_service
 )
+from LMSAPP.services.employee_service import get_employee_tasks
 from LMSAPP.views.api_views.notification_api_views import send_notification
 from LMSAPP.services.task_request_service import (
     create_task_request_service,
@@ -16,9 +17,14 @@ from LMSAPP.services.task_request_service import (
 )
 
 def get_tasks_api(request):
-    
     try:
-        tasks = get_all_tasks_service()
+        user_name = request.session.get('user_name')
+        user_role = str(request.session.get('role', '')).lower()
+        user_type = str(request.session.get('user_type', '')).lower()
+        if user_role == 'employee' or user_type == 'employee':
+            tasks = get_employee_tasks(user_name)
+        else:
+            tasks = get_all_tasks_service()
         return JsonResponse({'status': 'success', 'data': tasks})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

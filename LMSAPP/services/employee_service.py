@@ -1,3 +1,4 @@
+import json
 from django.db import connection
 from django.contrib.auth.hashers import make_password  
 from LMSAPP.services.task_service import tasks_table
@@ -88,7 +89,7 @@ def get_employee_tasks(username=None, employee_id=None):
 
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, task_name, project_name, created_date, due_date, status, employee_name
+            SELECT id, task_name, project_name, created_date, due_date, status, employee_name, employee_status
             FROM tasks 
             ORDER BY id DESC
         """)
@@ -97,8 +98,26 @@ def get_employee_tasks(username=None, employee_id=None):
         tasks = []
         for row in rows:
             emp_str = (row[6] or '').strip()
+            emp_status_raw = row[7] if len(row) > 7 else None
+            emp_status_dict = {}
+            if emp_status_raw:
+                try:
+                    emp_status_dict = json.loads(emp_status_raw)
+                except Exception:
+                    emp_status_dict = {}
+
             assigned_names = [e.strip().lower() for e in emp_str.split(',') if e.strip()]
             if clean_user in assigned_names or clean_user == emp_str.lower() or (clean_user and clean_user in emp_str.lower()):
+                emp_own_status = None
+                if emp_status_dict:
+                    for k, v in emp_status_dict.items():
+                        if k.strip().lower() == clean_user:
+                            emp_own_status = v
+                            break
+
+                if not emp_own_status:
+                    emp_own_status = 'Not Worked'
+
                 tasks.append({
                     's_no': len(tasks) + 1,
                     'id': row[0],
@@ -106,8 +125,11 @@ def get_employee_tasks(username=None, employee_id=None):
                     'project_name': row[2],
                     'created_date': row[3] or '',
                     'due_date': row[4] or '',
-                    'status': row[5] or 'Not Worked',
-                    'employee_name': row[6] or ''
+                    'status': emp_own_status,
+                    'overall_status': row[5] or 'Not Worked',
+                    'employee_name': row[6] or '',
+                    'employee_status': emp_status_dict,
+                    'employee_status_json': json.dumps(emp_status_dict)
                 })
     return tasks
 
