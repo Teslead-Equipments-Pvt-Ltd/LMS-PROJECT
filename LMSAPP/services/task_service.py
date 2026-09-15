@@ -74,6 +74,9 @@ def get_all_tasks_service():
 
 def add_task_service(task_name, project_name, due_date, status, employee_name, created_date=None):
     tasks_table()
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    if not created_date:
+        created_date = today_str
     assigned_list = [e.strip() for e in (employee_name or '').split(',') if e.strip()]
     emp_status_dict = {emp: status for emp in assigned_list}
     emp_status_json = json.dumps(emp_status_dict)

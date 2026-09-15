@@ -66,10 +66,11 @@ def update_project_service(project_id, project_name, project_type, status, creat
         completion_date = today_str
 
     with connection.cursor() as cursor:
-        # STEP 1: Get current project status from database
-        cursor.execute("SELECT status FROM projects WHERE id = %s", [project_id])
+        # STEP 1: Get current project status and name from database
+        cursor.execute("SELECT project_name, status FROM projects WHERE id = %s", [project_id])
         row = cursor.fetchone()
-        old_status = row[0] if row else ""
+        old_project_name = row[0] if row else ""
+        old_status = row[1] if row else ""
 
         # STEP 2: Rule -> Cannot change back to Not Worked from In Progress or Completed
         if (old_status == "In Progress" or old_status == "Completed") and status == "Not Worked":
@@ -86,6 +87,14 @@ def update_project_service(project_id, project_name, project_type, status, creat
             SET project_name = %s, project_type = %s, status = %s, created_date = %s, completion_date = %s, due_date = %s
             WHERE id = %s
         """, [project_name, project_type, status, created_date, completion_date, due_date, project_id])
+
+        # STEP 5: Update project_name in tasks table if project name changed
+        if old_project_name and old_project_name.strip() != project_name.strip():
+            cursor.execute("""
+                UPDATE tasks
+                SET project_name = %s
+                WHERE LOWER(TRIM(project_name)) = LOWER(TRIM(%s))
+            """, [project_name.strip(), old_project_name.strip()])
     return True
 
 def delete_project_service(project_id):
