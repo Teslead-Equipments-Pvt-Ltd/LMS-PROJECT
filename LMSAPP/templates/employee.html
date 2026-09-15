@@ -28,19 +28,22 @@
 
             <tbody class="table_body">
                 {% for employee in employees %}
-                
+
                 <tr>
                     <td>{{ forloop.counter }}</td>
                     <td>{{ employee.employee_id }}</td>
                     <td>{{ employee.username }}</td>
                     <td>{{ employee.role }}</td>
                     <td>
-                        <!-- Updated -->
+                        {% if request.session.role == 'ADMIN' and employee.role == 'SUPER_ADMIN' %}
+                        <span style="color: #94a3b8; font-size: 13px;"></span>
+                        {% else %}
                         <button class="edit-btn"
                             onclick="editemployee('{{ employee.employee_id }}', '{{ employee.username }}', '{{ employee.role }}')">Edit</button>
 
-                       <button class="delete-btn" onclick="deleteEmployee('{{ employee.employee_id }}')">Delete</button>
-
+                        <button class="delete-btn"
+                            onclick="deleteEmployee('{{ employee.employee_id }}', '{{ employee.role }}')">Delete</button>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -60,7 +63,7 @@
             {% csrf_token %}
             <div class="form-group">
                 <label>Employee ID</label>
-                <input type="text" id="employee_id" placeholder="Employee ID" readonly style="background-color: #f1f5f9; cursor: not-allowed;">
+                <input type="text" id="employee_id" placeholder="Employee ID" cursor="not-allowed">
             </div>
             <div class="form-group">
                 <label>Employee Name</label>
@@ -68,7 +71,8 @@
             </div>
             <div class="form-group">
                 <label>Role</label>
-                <select id="role" required style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                <select id="role" required
+                    style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
                     <option value="EMPLOYEE">EMPLOYEE</option>
                     <option value="ADMIN">ADMIN</option>
                     <option value="SUPER_ADMIN">SUPER_ADMIN</option>
@@ -78,8 +82,9 @@
                 <label>Change Password <span style="font-weight: normal; font-size: 12px; color: #64748b;">(leave blank to keep unchanged)</span></label>
                 <input type="password" id="edit_password" placeholder="Enter new password (optional)">
             </div>
-            <div id="password_permission_note" style="display: none; font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
-            
+            <div id="password_permission_note"
+                style="display: none; font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
+
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
@@ -104,7 +109,8 @@
             </div>
             <div class="form-group">
                 <label>Role</label>
-                <select id="add_role" required style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                <select id="add_role" required
+                    style="width: 100%; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px;">
                     <option value="EMPLOYEE">EMPLOYEE</option>
                     <option value="ADMIN">ADMIN</option>
                     <option value="SUPER_ADMIN">SUPER_ADMIN</option>
@@ -131,6 +137,16 @@
 
     // 1. Open popup & populate data
     function editemployee(employee_id, username, role) {
+        if (loggedInRole === 'ADMIN' && role === 'SUPER_ADMIN') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Permission Denied',
+                text: 'Admin cannot edit a Super Admin.',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
         const editModal = document.getElementById('edit_model');
         document.getElementById('employee_id').value = employee_id;
         document.getElementById('username').value = username;
@@ -174,6 +190,17 @@
         const username = document.getElementById('username').value;
         const role = document.getElementById('role').value;
         const password = document.getElementById('edit_password')?.value.trim() || '';
+
+        if (/^\d+$/.test(username.trim())) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Name',
+                text: 'Employee Name cannot be numbers only.',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
 
         const payload = {
             employee_id: employee_id,
@@ -226,7 +253,17 @@
     }
 
     // 4. Delete Employee API
-    function deleteEmployee(employee_id) {
+    function deleteEmployee(employee_id, role) {
+        if (loggedInRole === 'ADMIN' && role === 'SUPER_ADMIN') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Permission Denied',
+                text: 'Admin cannot delete a Super Admin.',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
         Swal.fire({
             icon: 'question',
             title: `Are you sure you want to delete employee ${employee_id}?`,
@@ -234,7 +271,7 @@
             showCancelButton: true,
             confirmButtonText: 'Yes, Delete it!',
             cancelButtonText: 'Cancel'
-        }).then(async function(result) {
+        }).then(async function (result) {
             if (result.isConfirmed) {
                 const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
@@ -303,6 +340,17 @@
         const role = document.getElementById('add_role').value;
         const password = document.getElementById('password').value; // <-- 1. GET PASSWORD
 
+        if (/^\d+$/.test(username.trim())) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Name',
+                text: 'Employee Name cannot be numbers only.',
+                width: '350px',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
         try {
             const response = await fetch('/api/add_employee/', {
                 method: 'POST',
@@ -355,13 +403,13 @@
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         {% for message in messages %}
-            Swal.fire({
-                icon: "{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}",
-                title: "{{ message.tags|capfirst }}",
-                text: "{{ message|escapejs }}",
-                width: '350px',
-                confirmButtonText: 'OK'
-            });
+        Swal.fire({
+            icon: "{% if message.tags == 'error' %}error{% elif message.tags == 'success' %}success{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}",
+            title: "{{ message.tags|capfirst }}",
+            text: "{{ message|escapejs }}",
+            width: '350px',
+            confirmButtonText: 'OK'
+        });
         {% endfor %}
     });
 </script>

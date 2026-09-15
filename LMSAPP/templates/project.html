@@ -73,7 +73,7 @@
             <tbody id="projectTableBody">
                 {% for project in projects %}
                 <tr data-id="{{ project.id }}" data-type="{{ project.project_type }}"
-                    data-due-date="{{ project.due_date }}" id="row-{{ project.id }}">
+                    data-due-date="{{ project.due_date }}" data-status="{{ project.status }}" id="row-{{ project.id }}">
                     <td style="text-align: center;">
                         <input type="checkbox" class="row-checkbox" value="{{ project.id }}"
                             onclick="updateBulkState()">
@@ -315,7 +315,10 @@
     let matchingRows = [];
 
     document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.status-select').forEach(updateStatusClass);
+        document.querySelectorAll('.status-select').forEach(sel => {
+            sel.dataset.previousValue = sel.value;
+            updateStatusClass(sel);
+        });
         filterProjects();
     });
 
@@ -496,17 +499,20 @@
 
 
     async function handleInlineStatusChange(selectElem, projectId) {
-        updateStatusClass(selectElem);
-        filterProjects();
+        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
         const row = document.getElementById(`row-${projectId}`);
         if (!row) return;
 
+        const previousStatus = selectElem.dataset.previousValue || row.dataset.status || 'Not Worked';
         const newStatus = selectElem.value;
         const createdCell = document.getElementById(`created-date-${projectId}`);
         const completionCell = document.getElementById(`completion-date-${projectId}`);
 
-        let createdDate = createdCell.dataset.value || (createdCell.textContent.trim() !== '-' ? createdCell.textContent.trim() : '');
-        let completionDate = completionCell.dataset.value || (completionCell.textContent.trim() !== '-' ? completionCell.textContent.trim() : '');
+        const oldCreatedDate = createdCell.dataset.value || (createdCell.textContent.trim() !== '-' ? createdCell.textContent.trim() : '');
+        const oldCompletionDate = completionCell.dataset.value || (completionCell.textContent.trim() !== '-' ? completionCell.textContent.trim() : '');
+
+        let createdDate = oldCreatedDate;
+        let completionDate = oldCompletionDate;
         const today = getTodayDateString();
 
         if (newStatus === 'In Progress') {
@@ -526,10 +532,12 @@
             }
         }
 
+        updateStatusClass(selectElem);
+        filterProjects(false);
+
         const projectName = row.querySelector('strong').textContent.trim();
         const projectType = row.dataset.type || 'Data Logger';
         const dueDate = row.dataset.dueDate || '';
-        const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
 
         try {
             const response = await fetch('/api/projects/update/', {
@@ -547,16 +555,49 @@
             });
             const data = await response.json();
             if (response.ok && data.status === 'success') {
+                selectElem.dataset.previousValue = newStatus;
+                row.dataset.status = newStatus;
                 if (newStatus === 'In Progress' || newStatus === 'Completed') {
                     const notWorkedOpt = selectElem.querySelector('option[value="Not Worked"]');
                     if (notWorkedOpt) {
                         notWorkedOpt.disabled = true;
                     }
-                    row.dataset.status = newStatus;
                 }
+            } else {
+                selectElem.value = previousStatus;
+                selectElem.dataset.previousValue = previousStatus;
+                createdCell.textContent = oldCreatedDate || '-';
+                createdCell.dataset.value = oldCreatedDate;
+                completionCell.textContent = oldCompletionDate || '-';
+                completionCell.dataset.value = oldCompletionDate;
+                updateStatusClass(selectElem);
+                filterProjects(false);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cannot Complete Project',
+                    text: data.message || 'There are incomplete task(s) assigned to this project.',
+                    confirmButtonText: 'OK',
+                    width: '400px',
+                    confirmButtonColor: '#2563eb'
+                });
             }
         } catch (err) {
             console.error('Status update error:', err);
+            selectElem.value = previousStatus;
+            selectElem.dataset.previousValue = previousStatus;
+            createdCell.textContent = oldCreatedDate || '-';
+            createdCell.dataset.value = oldCreatedDate;
+            completionCell.textContent = oldCompletionDate || '-';
+            completionCell.dataset.value = oldCompletionDate;
+            updateStatusClass(selectElem);
+            filterProjects(false);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Network error occurred while updating project status.',
+                confirmButtonText: 'OK',
+                width: '400px'
+            });
         }
     }
 
@@ -627,12 +668,14 @@
                 })
                 window.location.reload();
             } else {
+                const isWarning = (data.message && data.message.includes('task(s) assigned'));
                 Swal.fire({
-                    icon: 'error',
-                    title: 'Error!',
+                    icon: isWarning ? 'warning' : 'error',
+                    title: isWarning ? 'Cannot Complete Project' : 'Error!',
                     text: data.message || 'Failed to update project.',
                     confirmButtonText: 'OK',
-                    width: '350px'
+                    width: '400px',
+                    confirmButtonColor: '#2563eb'
                 });
             }
         } catch (err) {

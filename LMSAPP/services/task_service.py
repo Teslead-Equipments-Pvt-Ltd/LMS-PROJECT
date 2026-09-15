@@ -31,13 +31,17 @@ def tasks_table():
             cursor.execute("ALTER TABLE tasks ADD COLUMN employee_status TEXT DEFAULT NULL;")
         except Exception:
             pass
+        try:
+            cursor.execute("ALTER TABLE tasks ADD COLUMN completed_date VARCHAR(50) DEFAULT NULL;")
+        except Exception:
+            pass
 
 
 def get_all_tasks_service():
     tasks_table()
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, task_name, project_name, created_date, due_date, status, employee_name, employee_status
+            SELECT id, task_name, project_name, created_date, due_date, status, employee_name, employee_status, completed_date
             FROM tasks ORDER BY id DESC
         """)
         rows = cursor.fetchall()
@@ -46,6 +50,7 @@ def get_all_tasks_service():
     for index, row in enumerate(rows, start=1):
         emp_names_str = row[6] 
         emp_status_raw = row[7]
+        comp_date_val = row[8] if len(row) > 8 else None
         emp_status_dict = {}
         if emp_status_raw:
             try:
@@ -68,7 +73,8 @@ def get_all_tasks_service():
             'status': row[5],
             'employee_name': row[6],
             'employee_status': emp_status_dict,
-            'employee_status_json': json.dumps(emp_status_dict)
+            'employee_status_json': json.dumps(emp_status_dict),
+            'completed_date': comp_date_val or '-'
         })
     return tasks
 
@@ -80,12 +86,13 @@ def add_task_service(task_name, project_name, due_date, status, employee_name, c
     assigned_list = [e.strip() for e in (employee_name or '').split(',') if e.strip()]
     emp_status_dict = {emp: status for emp in assigned_list}
     emp_status_json = json.dumps(emp_status_dict)
+    completed_date = today_str if status == "Completed" else ""
 
     with connection.cursor() as cursor:
         cursor.execute("""
-            INSERT INTO tasks (task_name, project_name, due_date, status, employee_name, created_date, employee_status)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, [task_name, project_name, due_date, status, employee_name, created_date, emp_status_json])
+            INSERT INTO tasks (task_name, project_name, due_date, status, employee_name, created_date, employee_status, completed_date)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, [task_name, project_name, due_date, status, employee_name, created_date, emp_status_json, completed_date])
         task_id = cursor.lastrowid
 
     # 1. Notify assigned employee
@@ -115,12 +122,13 @@ def update_task_service(task_id, task_name, project_name, due_date, status, empl
 
     tasks_table()
     with connection.cursor() as cursor:
-        cursor.execute("SELECT status, employee_name, employee_status FROM tasks WHERE id = %s", [task_id])
+        cursor.execute("SELECT status, employee_name, employee_status, completed_date FROM tasks WHERE id = %s", [task_id])
         current_row = cursor.fetchone()
 
     current_status = current_row[0] if current_row else status
     current_emp_name = current_row[1] if current_row else employee_name
     current_emp_status_raw = current_row[2] if current_row else None
+    existing_completed_date = current_row[3] if (current_row and len(current_row) > 3) else ""
 
     existing_emp_status_dict = {}
     if current_emp_status_raw:
@@ -164,14 +172,20 @@ def update_task_service(task_id, task_name, project_name, due_date, status, empl
         else:
             status = 'Not Worked'
 
+    today_str = datetime.date.today().strftime("%Y-%m-%d")
+    if status == 'Completed':
+        completed_date = existing_completed_date or today_str
+    else:
+        completed_date = ""
+
     emp_status_json = json.dumps(emp_status_dict)
 
     with connection.cursor() as cursor:
         cursor.execute("""
             UPDATE tasks
-            SET task_name = %s, project_name = %s, created_date = %s, due_date = %s, status = %s, employee_name = %s, employee_status = %s
+            SET task_name = %s, project_name = %s, created_date = %s, due_date = %s, status = %s, employee_name = %s, employee_status = %s, completed_date = %s
             WHERE id = %s
-        """, [task_name, project_name, created_date, due_date, status, employee_name, emp_status_json, task_id])
+        """, [task_name, project_name, created_date, due_date, status, employee_name, emp_status_json, completed_date, task_id])
 
     return True
 

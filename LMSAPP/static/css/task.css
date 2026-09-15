@@ -586,6 +586,11 @@
     border-radius: 6px;
     background-color: #f1f5f9;
     border: 1px solid #e2e8f0;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
 }
 
 .employee-name-clickable:hover {

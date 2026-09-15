@@ -23,6 +23,13 @@ def get_all_employees():
     return employees_list
 
 
+def get_employee_role(employee_id):
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT role FROM users WHERE employee_id = %s", [employee_id])
+        row = cursor.fetchone()
+        return row[0] if row else None
+
+
 
 def update_employee_service(employee_id, username, role, password=None):
     """
@@ -89,7 +96,7 @@ def get_employee_tasks(username=None, employee_id=None):
 
     with connection.cursor() as cursor:
         cursor.execute("""
-            SELECT id, task_name, project_name, created_date, due_date, status, employee_name, employee_status
+            SELECT id, task_name, project_name, created_date, due_date, status, employee_name, employee_status, completed_date
             FROM tasks 
             ORDER BY id DESC
         """)
@@ -99,6 +106,7 @@ def get_employee_tasks(username=None, employee_id=None):
         for row in rows:
             emp_str = (row[6] or '').strip()
             emp_status_raw = row[7] if len(row) > 7 else None
+            comp_date_val = row[8] if len(row) > 8 else None
             emp_status_dict = {}
             if emp_status_raw:
                 try:
@@ -129,7 +137,8 @@ def get_employee_tasks(username=None, employee_id=None):
                     'overall_status': row[5] or 'Not Worked',
                     'employee_name': row[6] or '',
                     'employee_status': emp_status_dict,
-                    'employee_status_json': json.dumps(emp_status_dict)
+                    'employee_status_json': json.dumps(emp_status_dict),
+                    'completed_date': comp_date_val or '-'
                 })
     return tasks
 

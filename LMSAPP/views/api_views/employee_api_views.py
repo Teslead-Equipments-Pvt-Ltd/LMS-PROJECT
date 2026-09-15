@@ -1,6 +1,6 @@
 import json
 from django.http import JsonResponse
-from LMSAPP.services.employee_service import update_employee_service, delete_employee_service, add_employee_service
+from LMSAPP.services.employee_service import update_employee_service, delete_employee_service, add_employee_service, get_employee_role
 
 def update_employee_api(request):
     if request.method != 'POST':
@@ -16,9 +16,17 @@ def update_employee_api(request):
         if not employee_id or not username:
             return JsonResponse({'status': 'error', 'message': 'Employee ID and Name are required.'}, status=400)
 
+        if username.isdigit():
+            return JsonResponse({'status': 'error', 'message': 'Employee Name cannot be numbers only.'}, status=400)
+
         current_role = request.session.get('role')
         current_emp_id = request.session.get('employee_id')
         is_admin_or_super = current_role in ['ADMIN', 'SUPER_ADMIN']
+
+        # Admin cannot edit Super Admin
+        target_role = get_employee_role(employee_id)
+        if current_role == 'ADMIN' and target_role == 'SUPER_ADMIN':
+            return JsonResponse({'status': 'error', 'message': 'Admin cannot edit a Super Admin.'}, status=403)
 
         # Admin and Super Admin can change password for all; Employee can only change their own
         if password:
@@ -53,7 +61,12 @@ def delete_employee_api(request):
         employee_id = data.get('employee_id')
         if not employee_id:
             return JsonResponse({'status': 'error', 'message': 'Employee ID is required.'}, status=400)
-            
+
+        # Admin cannot delete Super Admin
+        target_role = get_employee_role(employee_id)
+        if current_role == 'ADMIN' and target_role == 'SUPER_ADMIN':
+            return JsonResponse({'status': 'error', 'message': 'Admin cannot delete a Super Admin.'}, status=403)
+
         delete_employee_service(employee_id)
         return JsonResponse({'status': 'success', 'message': 'Employee deleted successfully'})
     except Exception as e:
@@ -79,6 +92,9 @@ def add_employee_api(request):
 
         if not employee_id or not username:
             return JsonResponse({'status': 'error', 'message': 'Employee ID and Name are required.'}, status=400)
+
+        if username.isdigit():
+            return JsonResponse({'status': 'error', 'message': 'Employee Name cannot be numbers only.'}, status=400)
         
         if not password:
             return JsonResponse({'status': 'error', 'message': 'Password is required.'}, status=400)

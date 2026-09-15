@@ -72,8 +72,11 @@
                     <th>Employee Name</th>
                     <th>Created Date</th>
                     <th>Due Date</th>
+                    <th>Completed Date</th>
                     <th>Status</th>
+                    {% if request.session.user_type|lower == "superadmin" or request.session.user_type|lower == "admin" %}
                     <th style="text-align: center;">Actions</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody id="taskTableBody">
@@ -90,17 +93,19 @@
                     <td>{{ task.s_no }}</td>
                     <td><strong>{{ task.task_name }}</strong></td>
                     <td><span class="badge badge-data-logger">{{ task.project_name }}</span></td>
-                    <td>
+                    <td title="Assigned Employees: {{ task.employee_name|default:'-' }}">
                         <span class="employee-name-clickable" onclick="openEmployeeStatusModal({{ task.id }})"
-                            title="Click to view assigned employee status">
+                            title="Assigned Employees: {{ task.employee_name|default:'-' }}">
                             <b>{{ task.employee_name|default:"-" }}</b>
                         </span>
                     </td>
                     <td id="created-date-{{ task.id }}" data-value="{{ task.created_date }}">{{ task.created_date|default:"-" }}</td>
-                    <td>{{ task.due_date|default:"-" }}</td>
+                    <td id="due-date-{{ task.id }}" data-value="{{ task.due_date }}">{{ task.due_date|default:"-" }}</td>
+                    <td id="completed-date-{{ task.id }}" data-value="{{ task.completed_date }}">{{ task.completed_date|default:"-" }}</td>
                     <td>
                         <select
                             class="status-select status-{% if task.status == 'Completed' %}completed{% elif task.status == 'In Progress' or task.status == 'InProgress' %}in-progress{% elif task.status == 'On Hold' %}onhold{% else %}not-worked{% endif %}"
+                            data-previous-value="{{ task.status }}"
                             onchange="changeStatus(this, {{ task.id }})" {% if request.session.user_type|lower == "employee" or request.session.role|lower == "employee" %}{% if task.status == "Completed" %}disabled{% endif %}{% endif %}>
                             <option value="Not Worked" class="opt-not-worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
                             <option value="In Progress" class="opt-in-progress" {% if task.status == "In Progress" or task.status == "InProgress" %}selected{% endif %}>InProgress</option>
@@ -108,9 +113,9 @@
                             <option value="Completed" class="opt-completed" {% if task.status == "Completed" %}selected{% endif %}>Completed</option>
                         </select>
                     </td>
+                    {% if request.session.user_type|lower == "superadmin" or request.session.user_type|lower == "admin" %}
                     <td style="text-align: center;">
                         <div class="action-btn-container">
-                            {% if request.session.user_type|lower == "superadmin" or request.session.user_type|lower == "admin" %}
                             <button class="btn-action btn-action-edit" title="Edit Task"
                                 onclick="openEdit({{ task.id }}, '{{ task.task_name|escapejs }}', '{{ task.project_name|escapejs }}', '{{ task.created_date }}', '{{ task.due_date }}', '{{ task.status|escapejs }}','{{ task.employee_name|escapejs }}')">
                                 Edit
@@ -119,11 +124,9 @@
                                 onclick="openDelete({{ task.id }}, '{{ task.task_name|escapejs }}')">
                                 Delete
                             </button>
-                            {% else %}
-                            <span style="color: #94a3b8; font-size: 13px;">-</span>
-                            {% endif %}
                         </div>
                     </td>
+                    {% endif %}
                 </tr>
                 {% empty %}
                 <tr>
@@ -638,6 +641,22 @@
             updateStatusClass(selectElem);
             filterTasks();
             return;
+        }
+
+        if (isEmployee && newStatus === 'Completed') {
+            const isPreviousInProgress = (previousStatus === 'In Progress' || previousStatus === 'InProgress');
+            if (!isPreviousInProgress) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'Action Not Allowed',
+                    text: 'Task not allowed directly to Completed.',
+                    confirmButtonColor: '#2563eb'
+                });
+                selectElem.value = previousStatus;
+                updateStatusClass(selectElem);
+                filterTasks();
+                return;
+            }
         }
 
         if (isEmployee && (newStatus === 'In Progress' || newStatus === 'InProgress')) {
@@ -1412,6 +1431,15 @@
                             createdCell.textContent = task.created_date;
                             createdCell.dataset.value = task.created_date;
                             row.dataset.createdDate = task.created_date;
+                        }
+
+                        const completedCell = document.getElementById(`completed-date-${task.id}`);
+                        if (completedCell && task.completed_date !== undefined) {
+                            const newCompVal = task.completed_date || '-';
+                            if (completedCell.textContent.trim() !== newCompVal) {
+                                completedCell.textContent = newCompVal;
+                                completedCell.dataset.value = task.completed_date || '';
+                            }
                         }
 
                         if (select) {

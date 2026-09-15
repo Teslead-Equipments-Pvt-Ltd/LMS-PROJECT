@@ -81,6 +81,18 @@ def update_project_service(project_id, project_name, project_type, status, creat
         if cursor.fetchone():
             raise ValueError(f"Project '{project_name.strip()}' already exists.")
 
+        # STEP 4: Check if project status is being set to Completed
+        if status == "Completed":
+            target_proj_name = old_project_name or project_name
+            cursor.execute("""
+                SELECT COUNT(*) FROM tasks
+                WHERE LOWER(TRIM(project_name)) = LOWER(TRIM(%s))
+                  AND LOWER(TRIM(status)) != 'completed'
+            """, [target_proj_name.strip()])
+            incomplete_count = cursor.fetchone()[0]
+            if incomplete_count > 0:
+                raise ValueError(f"Cannot complete project '{project_name.strip()}'. There are {incomplete_count} task(s) assigned to this project that are not completed yet.")
+
         # STEP 4: Update project in database
         cursor.execute("""
             UPDATE projects
