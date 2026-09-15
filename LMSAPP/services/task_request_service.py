@@ -1,8 +1,7 @@
+import json
 import datetime
 from django.db import connection
 from LMSAPP.services.notification_service import create_notification_service
-
-
 
 def ensure_task_requests_table():
     """
@@ -75,12 +74,7 @@ def create_task_request_service(task_id, task_name, employee_name, active_task_n
     return request_id, True, "Approval request sent to Admin."
 
 def approve_task_request_service(request_id, admin_name='Admin'):
-    """
-    Approves a task request:
-    1. Sets task request status to 'Approved'
-    2. Updates the task status in 'tasks' table to 'In Progress'
-    3. Sends notification to employee
-    """
+  
     ensure_task_requests_table()
 
     with connection.cursor() as cursor:
@@ -99,17 +93,68 @@ def approve_task_request_service(request_id, admin_name='Admin'):
         # 1. Mark request as Approved
         cursor.execute("UPDATE task_requests SET status = 'Approved' WHERE id = %s", [request_id])
 
-        # 2. Set status to In Progress in tasks table
+        # 2. Update task status and employee_status JSON in tasks table
+        cursor.execute("SELECT employee_name, employee_status FROM tasks WHERE id = %s", [task_id])
+        task_row = cursor.fetchone()
+
+        emp_status_dict = {}
+        assigned_emp_str = ""
+        if task_row:
+            assigned_emp_str = task_row[0] or ''
+            raw_emp_status = task_row[1]
+            if raw_emp_status:
+                try:
+                    emp_status_dict = json.loads(raw_emp_status)
+                except Exception:
+                    emp_status_dict = {}
+
+        # Ensure all assigned employees are present in emp_status_dict
+        assigned_list = [e.strip() for e in assigned_emp_str.split(',') if e.strip()]
+        for emp in assigned_list:
+            if emp not in emp_status_dict:
+                emp_status_dict[emp] = 'Not Worked'
+
+        # Update status for the employee who submitted the request to 'In Progress'
+        clean_req_emp = (employee_name or '').strip().lower()
+        matched_key = None
+        for key in emp_status_dict.keys():
+            if key.strip().lower() == clean_req_emp:
+                matched_key = key
+                break
+
+        if matched_key:
+            emp_status_dict[matched_key] = 'In Progress'
+        else:
+            if employee_name:
+                emp_status_dict[employee_name] = 'In Progress'
+
+        # Calculate overall task status
+        statuses = list(emp_status_dict.values())
+        if statuses:
+            if all(s == 'Completed' for s in statuses):
+                overall_status = 'Completed'
+            elif any(s in ['In Progress', 'InProgress'] for s in statuses):
+                overall_status = 'In Progress'
+            elif any(s == 'On Hold' for s in statuses):
+                overall_status = 'On Hold'
+            else:
+                overall_status = 'Not Worked'
+        else:
+            overall_status = 'In Progress'
+
+        emp_status_json = json.dumps(emp_status_dict)
         today_date = datetime.date.today().strftime("%Y-%m-%d")
+
         cursor.execute("""
             UPDATE tasks
-            SET status = 'In Progress',
+            SET status = %s,
+                employee_status = %s,
                 created_date = CASE 
                     WHEN created_date IS NULL OR created_date = '' THEN %s 
                     ELSE created_date 
                 END
             WHERE id = %s
-        """, [today_date, task_id])
+        """, [overall_status, emp_status_json, today_date, task_id])
 
     # 3. Notify the employee that request was approved
     create_notification_service(

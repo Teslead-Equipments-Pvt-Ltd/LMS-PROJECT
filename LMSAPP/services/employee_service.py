@@ -115,7 +115,7 @@ def get_employee_tasks(username=None, employee_id=None):
                     emp_status_dict = {}
 
             assigned_names = [e.strip().lower() for e in emp_str.split(',') if e.strip()]
-            if clean_user in assigned_names or clean_user == emp_str.lower() or (clean_user and clean_user in emp_str.lower()):
+            if clean_user in assigned_names:
                 emp_own_status = None
                 if emp_status_dict:
                     for k, v in emp_status_dict.items():

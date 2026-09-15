@@ -1,7 +1,8 @@
 from django.http import JsonResponse
 from LMSAPP.services.notification_service import (
     create_notification_service,
-    get_notifications_by_user
+    get_notifications_by_user,
+    check_and_mark_approval_notifications_service
 )
 
 def send_notification(task_id, task_name, status, employee_name, updated_by=None, user_role=None):
@@ -67,4 +68,20 @@ def get_notifications_api(request):
         return JsonResponse({'status': 'success', 'data': notifications})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def check_approval_api(request):
+    """
+    API endpoint for employees to check and mark unread task approval notifications.
+    """
+    try:
+        user_name = request.session.get('user_name')
+        if not user_name:
+            return JsonResponse({'status': 'success', 'approved_requests': []})
+
+        approved_requests = check_and_mark_approval_notifications_service(user_name)
+        return JsonResponse({'status': 'success', 'approved_requests': approved_requests})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
 

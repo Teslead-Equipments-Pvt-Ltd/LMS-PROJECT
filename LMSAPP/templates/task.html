@@ -1398,16 +1398,18 @@
         }
     }
 
-    // 10. Live Auto-Update Polling (Every 2 seconds)
     setInterval(loadLiveTasks, 2000);
+    setInterval(checkApprovalPopup, 2000);
 
-    async function loadLiveTasks() {
-        // If a modal or SweetAlert is currently open, avoid interfering with user input
-        if (typeof Swal !== 'undefined' && Swal.isVisible()) return;
-        const addModal = document.getElementById('addTaskModal');
-        const editModal = document.getElementById('editTaskModal');
-        if ((addModal && addModal.style.display === 'flex') || (editModal && editModal.style.display === 'flex')) {
-            return;
+    async function loadLiveTasks(force = false) {
+        // If a modal or SweetAlert is currently open, avoid interfering with user input unless forced
+        if (!force) {
+            if (typeof Swal !== 'undefined' && Swal.isVisible()) return;
+            const addModal = document.getElementById('addTaskModal');
+            const editModal = document.getElementById('editTaskModal');
+            if ((addModal && addModal.style.display === 'flex') || (editModal && editModal.style.display === 'flex')) {
+                return;
+            }
         }
 
         try {
@@ -1440,6 +1442,10 @@
                                 completedCell.textContent = newCompVal;
                                 completedCell.dataset.value = task.completed_date || '';
                             }
+                        }
+
+                        if (task.employee_status_json) {
+                            row.dataset.employeeStatus = task.employee_status_json;
                         }
 
                         if (select) {
@@ -1485,6 +1491,35 @@
             }
         } catch (err) {
             console.log('Error polling live tasks:', err);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        checkApprovalPopup();
+    });
+
+    async function checkApprovalPopup() {
+        try {
+            const res = await fetch('/api/notifications/check-approval/', { cache: 'no-store' });
+            const data = await res.json();
+            if (data.status === 'success' && data.approved_requests && data.approved_requests.length > 0) {
+                // Instantly update task status in DOM without page refresh
+                await loadLiveTasks(true);
+
+                data.approved_requests.forEach(item => {
+                    const isApproved = (item.type === 'request_approved');
+                    Swal.fire({
+                        icon: isApproved ? 'success' : 'info',
+                        title: item.title || (isApproved ? ' Request Approved!' : 'Request Rejected'),
+                        text: item.message,
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: isApproved ? '#10b981' : '#2563eb',
+                        width: '380px'
+                    });
+                });
+            }
+        } catch (e) {
+            console.log('Error checking approval popup:', e);
         }
     }
 

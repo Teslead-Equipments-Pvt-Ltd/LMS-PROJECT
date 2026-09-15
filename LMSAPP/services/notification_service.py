@@ -94,3 +94,40 @@ def get_notifications_by_user(recipient=None, is_admin=False):
     return notifications
 
 
+def check_and_mark_approval_notifications_service(user_name):
+    
+    if not user_name:
+        return []
+
+    ensure_notifications_table()
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT id, title, message, reference_id, notification_type
+            FROM notifications
+            WHERE recipient = %s 
+              AND notification_type IN ('request_approved', 'request_rejected')
+              AND is_read = 0
+            ORDER BY id ASC
+        """, [user_name])
+        rows = cursor.fetchall()
+
+        if not rows:
+            return []
+
+        notif_ids = [r[0] for r in rows]
+        format_strings = ','.join(['%s'] * len(notif_ids))
+        cursor.execute(f"UPDATE notifications SET is_read = 1 WHERE id IN ({format_strings})", notif_ids)
+
+    result = []
+    for r in rows:
+        result.append({
+            'id': r[0],
+            'title': r[1],
+            'message': r[2],
+            'task_id': r[3],
+            'type': r[4]
+        })
+    return result
+
+
+
