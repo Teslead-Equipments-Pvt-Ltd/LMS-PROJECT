@@ -99,14 +99,10 @@
         </div>
     </div>
 
-    <!-- Simple Pagination Bar (10 per page) -->
+    <!-- Pagination Bar (Task Module Style) -->
     <div class="pagination-bar" id="paginationBar" style="display: none;">
-        <div class="pagination-text" id="paginationInfo">
-            Showing 0-0 of 0 notifications
-        </div>
-        <div class="pagination-controls" id="paginationControls">
-            <!-- Dynamic page buttons injected by JavaScript -->
-        </div>
+        <div class="pagination-info" id="paginationInfo">Showing 0-0 of 0 notifications</div>
+        <div class="pagination-controls" id="paginationControls"></div>
     </div>
 
 </div>
@@ -116,7 +112,7 @@
     let currentFilter = 'ALL';
     let searchQuery = '';
     let currentPage = 1;
-    const pageSize = 10; // Fixed 10 items per page
+    const pageSize = 10;
     let matchingRows = [];
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -188,6 +184,9 @@
         if (currentPage > totalPages) {
             currentPage = totalPages;
         }
+        if (currentPage < 1) {
+            currentPage = 1;
+        }
 
         const startIndex = (currentPage - 1) * pageSize;
         const endIndex = startIndex + pageSize;
@@ -203,55 +202,84 @@
             }
         });
 
+        if (!paginationBar) return;
+
         // Toggle Pagination Bar
-        if (totalItems > 0) {
-            paginationBar.style.display = 'flex';
-        } else {
+        if (totalItems === 0) {
             paginationBar.style.display = 'none';
             return;
+        } else {
+            paginationBar.style.display = 'flex';
         }
 
         // Update Pagination Info
-        const displayStart = totalItems === 0 ? 0 : startIndex + 1;
+        const displayStart = startIndex + 1;
         const displayEnd = Math.min(endIndex, totalItems);
         const infoElem = document.getElementById('paginationInfo');
         if (infoElem) {
             infoElem.textContent = `Showing ${displayStart}-${displayEnd} of ${totalItems} notifications`;
         }
 
-        // Build Buttons
+        // Build Controls
         const controls = document.getElementById('paginationControls');
+        if (!controls) return;
         controls.innerHTML = '';
 
         // Previous Button
         const prevBtn = document.createElement('button');
         prevBtn.type = 'button';
         prevBtn.className = 'page-btn';
-        prevBtn.innerHTML = '&laquo;';
-        prevBtn.title = 'Previous';
+        prevBtn.innerHTML = '&laquo; Prev';
+        prevBtn.title = 'Previous Page';
         prevBtn.disabled = (currentPage === 1);
         prevBtn.onclick = () => goToPage(currentPage - 1);
         controls.appendChild(prevBtn);
 
-        // Page Number Buttons
-        for (let p = 1; p <= totalPages; p++) {
-            const pBtn = document.createElement('button');
-            pBtn.type = 'button';
-            pBtn.className = 'page-btn' + (p === currentPage ? ' active' : '');
-            pBtn.textContent = p;
-            pBtn.onclick = () => goToPage(p);
-            controls.appendChild(pBtn);
-        }
+        // Page Number Buttons with getPageNumbers pagination pattern
+        const pageNumbers = getPageNumbers(currentPage, totalPages);
+        pageNumbers.forEach(p => {
+            if (p === '...') {
+                const span = document.createElement('span');
+                span.style.padding = '0 6px';
+                span.style.color = '#94a3b8';
+                span.style.fontSize = '13px';
+                span.textContent = '...';
+                controls.appendChild(span);
+            } else {
+                const pBtn = document.createElement('button');
+                pBtn.type = 'button';
+                pBtn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+                pBtn.textContent = p;
+                pBtn.onclick = () => goToPage(p);
+                controls.appendChild(pBtn);
+            }
+        });
 
         // Next Button
         const nextBtn = document.createElement('button');
         nextBtn.type = 'button';
         nextBtn.className = 'page-btn';
-        nextBtn.innerHTML = '&raquo;';
-        nextBtn.title = 'Next';
+        nextBtn.innerHTML = 'Next &raquo;';
+        nextBtn.title = 'Next Page';
         nextBtn.disabled = (currentPage === totalPages);
         nextBtn.onclick = () => goToPage(currentPage + 1);
         controls.appendChild(nextBtn);
+    }
+
+    function getPageNumbers(current, total) {
+        if (total <= 7) {
+            let pages = [];
+            for (let i = 1; i <= total; i++) pages.push(i);
+            return pages;
+        }
+        let pages = [1];
+        if (current > 3) pages.push('...');
+        let start = Math.max(2, current - 1);
+        let end = Math.min(total - 1, current + 1);
+        for (let i = start; i <= end; i++) pages.push(i);
+        if (current < total - 2) pages.push('...');
+        pages.push(total);
+        return pages;
     }
 
     function goToPage(pageNumber) {
