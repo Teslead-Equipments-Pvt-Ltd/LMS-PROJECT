@@ -70,9 +70,30 @@ h2 {
     font-size: 15px;
 }
 
-.form-group input:focus {
-    outline: none;
-    border-color: #333;
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.password-wrapper input {
+    padding-right: 40px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #777;
+    user-select: none;
+}
+
+.toggle-password:hover {
+    color: #222;
 }
 
 button {

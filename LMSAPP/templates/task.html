@@ -100,13 +100,13 @@
                         </span>
                     </td>
                     <td id="created-date-{{ task.id }}" data-value="{{ task.created_date }}">{{ task.created_date|default:"-" }}</td>
-                    <td id="due-date-{{ task.id }}" data-value="{{ task.due_date }}">{{ task.due_date|default:"-" }}</td>
+                    <td id="due-date-{{ task.id }}" data-value="{{ task.due_date }}">{{ task.due_date|default:"-" }}
+                    </td>
                     <td id="completed-date-{{ task.id }}" data-value="{{ task.completed_date }}">{{ task.completed_date|default:"-" }}</td>
                     <td>
                         <select
                             class="status-select status-{% if task.status == 'Completed' %}completed{% elif task.status == 'In Progress' or task.status == 'InProgress' %}in-progress{% elif task.status == 'On Hold' %}onhold{% else %}not-worked{% endif %}"
-                            data-previous-value="{{ task.status }}"
-                            onchange="changeStatus(this, {{ task.id }})" {% if request.session.user_type|lower == "employee" or request.session.role|lower == "employee" %}{% if task.status == "Completed" %}disabled{% endif %}{% endif %}>
+                            data-previous-value="{{ task.status }}" onchange="changeStatus(this, {{ task.id }})" {% if request.session.user_type|lower == "employee" or request.session.role|lower == "employee" %}{% if task.status == "Completed" %}disabled{% endif %}{% endif %}>
                             <option value="Not Worked" class="opt-not-worked" {% if task.status == "Not Worked" %}selected{% endif %}>Not Worked</option>
                             <option value="In Progress" class="opt-in-progress" {% if task.status == "In Progress" or task.status == "InProgress" %}selected{% endif %}>InProgress</option>
                             <option value="On Hold" class="opt-onhold" {% if task.status == "On Hold" %}selected{% endif %}>On Hold</option>
@@ -244,8 +244,7 @@
                         <ul class="project-item-list" id="editProjectList">
                             {% for proj in projects %}
                             <li class="project-item"
-                                onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{
-                                proj.project_name }}</li>
+                                onclick="selectProjectItem('edit', '{{ proj.project_name|escapejs }}')">{{ proj.project_name }}</li>
                             {% empty %}
                             <li class="project-item-empty">No projects found</li>
                             {% endfor %}
@@ -1494,7 +1493,7 @@
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         checkApprovalPopup();
     });
 

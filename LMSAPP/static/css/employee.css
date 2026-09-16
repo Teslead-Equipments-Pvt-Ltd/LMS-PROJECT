@@ -177,6 +177,32 @@
     box-sizing: border-box;
 }
 
+.password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.password-wrapper input {
+    padding-right: 36px;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    user-select: none;
+}
+
+.toggle-password:hover {
+    color: #1e293b;
+}
+
 .modal-actions {
     display: flex;
     justify-content: flex-end;

@@ -79,8 +79,17 @@
                 </select>
             </div>
             <div class="form-group" id="edit_password_group">
-                <label>Change Password <span style="font-weight: normal; font-size: 12px; color: #64748b;">(leave blank to keep unchanged)</span></label>
-                <input type="password" id="edit_password" placeholder="Enter new password (optional)">
+                <label>Change Password <span style="font-weight: normal; font-size: 12px; color: #64748b;">(leave blank
+                        to keep unchanged)</span></label>
+                <div class="password-wrapper">
+                    <input type="password" id="edit_password" placeholder="Enter new password (optional)">
+                    <span class="toggle-password" id="edit_password_toggle" onclick="togglePasswordVisibility('edit_password', this)" title="Toggle Password Visibility">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </span>
+                </div>
             </div>
             <div id="password_permission_note"
                 style="display: none; font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
@@ -118,7 +127,15 @@
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" placeholder="password" required>
+                <div class="password-wrapper">
+                    <input type="password" id="password" placeholder="password" required>
+                    <span class="toggle-password" id="add_password_toggle" onclick="togglePasswordVisibility('password', this)" title="Toggle Password Visibility">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </span>
+                </div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
@@ -131,6 +148,27 @@
 
 
 <script>
+    function togglePasswordVisibility(inputId, toggleEl) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const isPassword = input.type === 'password';
+        input.type = isPassword ? 'text' : 'password';
+
+        const eyeOpen = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        const eyeOff = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+        toggleEl.innerHTML = isPassword ? eyeOff : eyeOpen;
+    }
+
+    function resetPasswordVisibility(inputId, toggleElId) {
+        const input = document.getElementById(inputId);
+        const toggleEl = document.getElementById(toggleElId);
+        if (input) input.type = 'password';
+        if (toggleEl) {
+            toggleEl.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+        }
+    }
+
     const loggedInRole = "{{ request.session.role|default:'' }}";
     const loggedInEmpId = "{{ request.session.employee_id|default:'' }}";
     const isAdminOrSuperAdmin = (loggedInRole === 'ADMIN' || loggedInRole === 'SUPER_ADMIN');
@@ -147,6 +185,7 @@
             });
             return;
         }
+        resetPasswordVisibility('edit_password', 'edit_password_toggle');
         const editModal = document.getElementById('edit_model');
         document.getElementById('employee_id').value = employee_id;
         document.getElementById('username').value = username;
@@ -179,6 +218,7 @@
     function closeEditModal() {
         document.getElementById('edit_model').style.display = 'none';
         document.getElementById('editEmployeeForm').reset();
+        resetPasswordVisibility('edit_password', 'edit_password_toggle');
     }
 
     // 3. Submit Update API
@@ -321,6 +361,7 @@
 
     // Open Add Modal
     function addemployee() {
+        resetPasswordVisibility('password', 'add_password_toggle');
         document.getElementById('add_employee_modal').style.display = 'flex';
     }
 
@@ -328,6 +369,7 @@
     function closeAddModal() {
         document.getElementById('add_employee_modal').style.display = 'none';
         document.getElementById('addEmployeeForm').reset();
+        resetPasswordVisibility('password', 'add_password_toggle');
     }
 
     // Submit Add Employee Form
